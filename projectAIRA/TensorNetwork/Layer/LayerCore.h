@@ -22,7 +22,7 @@ protected:
 
 	//このモジュールが生成したテンソル
 	std::vector<std::shared_ptr<TensorCore> > mTensorCoreTbl;
-	std::vector<std::shared_ptr<LayerCore> > mInnerModulePtrTbl;
+	std::vector<std::shared_ptr<LayerCore> > mInnerLayerPtrTbl;
 	const u32 m_input_num;
 	const u32 m_output_num;
 };

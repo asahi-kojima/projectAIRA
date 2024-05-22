@@ -11,7 +11,7 @@ public:
 		//可変長テンプレートなので、分解してinnerModuleに格納している。
 		Layer module_tbl[] = { args... };
 		const u32 inner_module_num = (sizeof(module_tbl) / sizeof(module_tbl[0]));
-		mInnerModulePtrTbl.resize(inner_module_num);
+		mInnerLayerPtrTbl.resize(inner_module_num);
 
 		for (u32 i = 0, end = inner_module_num; i < end; i++)
 		{
@@ -22,7 +22,7 @@ public:
 					<< module_tbl[i].mModule->get_output_num() << " ). " << std::endl;
 				exit(1);
 			}
-			mInnerModulePtrTbl[i] = module_tbl[i].mModule;
+			mInnerLayerPtrTbl[i] = module_tbl[i].mModule;
 		}
 	}
 
