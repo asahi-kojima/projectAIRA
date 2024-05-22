@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\common">
+      <UniqueIdentifier>{48c59994-f81f-4649-a415-e9a9bdf3b723}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork">
+      <UniqueIdentifier>{c8670e7b-df65-4bce-9fc2-7b1b6aa66245}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Optimizer">
+      <UniqueIdentifier>{93068005-fda0-4e29-9289-3b988bf60c14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer">
+      <UniqueIdentifier>{64a9f49c-bdf6-4d04-89d6-6644f529e9a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Tensor">
+      <UniqueIdentifier>{c2dcaf6e-8e69-4f65-93d9-110de082a9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Affine">
+      <UniqueIdentifier>{179403e5-7560-4be8-a8d3-a8f74349e40e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Split">
+      <UniqueIdentifier>{5d6d826c-b183-40ab-b6ec-972181193724}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Sequential">
+      <UniqueIdentifier>{ee889bd8-c17a-4f71-bd2f-b87106936e5d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="projectAIRA.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common\typeinfo.h">
+      <Filter>ヘッダー ファイル\common</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Tensor\TensorCore.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Tensor</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Tensor\Tensor.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Tensor</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\LayerCore.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Layer.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Affine.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Affine</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Split.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Split</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Sequential.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
+      <Filter>ヘッダー ファイル\TensorNetwork</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
