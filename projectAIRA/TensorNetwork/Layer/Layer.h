@@ -5,7 +5,7 @@
 class Layer
 {
 public:
-	std::shared_ptr<LayerCore> mModule;
+	std::shared_ptr<LayerCore> mLayerCore;
 	template <typename ... Args>
 	LayerCore::iotype operator()(Args ... args)
 	{
@@ -19,19 +19,19 @@ public:
 			input_tensor_as_vector[i] = tensor_tbl[i];
 		}
 
-		return mModule->forward(input_tensor_as_vector);
+		return mLayerCore->forward(input_tensor_as_vector);
 	}
 
 	LayerCore::iotype operator()(const LayerCore::iotype& input)
 	{
-		return mModule->forward(input);
+		return mLayerCore->forward(input);
 	}
 };
 
 template <typename T, typename ... Args>
 Layer gen(Args ... args)
 {
-	Layer module{};
-	module.mModule = std::make_shared<T>(args...);
-	return module;
+	Layer layer{};
+	layer.mLayerCore = std::make_shared<T>(args...);
+	return layer;
 }

@@ -9,20 +9,20 @@ public:
 	SequentialCore(Args ... args) : LayerCore(1, 1)
 	{
 		//可変長テンプレートなので、分解してinnerModuleに格納している。
-		Layer module_tbl[] = { args... };
-		const u32 inner_module_num = (sizeof(module_tbl) / sizeof(module_tbl[0]));
+		Layer layer_tbl[] = { args... };
+		const u32 inner_module_num = (sizeof(layer_tbl) / sizeof(layer_tbl[0]));
 		mInnerLayerPtrTbl.resize(inner_module_num);
 
 		for (u32 i = 0, end = inner_module_num; i < end; i++)
 		{
-			if (module_tbl[i].mModule->get_input_tensor_num() != 1 || module_tbl[i].mModule->get_output_tensor_num() != 1)
+			if (layer_tbl[i].mLayerCore->get_input_tensor_num() != 1 || layer_tbl[i].mLayerCore->get_output_tensor_num() != 1)
 			{
 				std::cout << "inner module of Sequential  must be 1 input(your : "
-					<< module_tbl[i].mModule->get_input_tensor_num() << " ) and 1 output(your : "
-					<< module_tbl[i].mModule->get_output_tensor_num() << " ). " << std::endl;
+					<< layer_tbl[i].mLayerCore->get_input_tensor_num() << " ) and 1 output(your : "
+					<< layer_tbl[i].mLayerCore->get_output_tensor_num() << " ). " << std::endl;
 				exit(1);
 			}
-			mInnerLayerPtrTbl[i] = module_tbl[i].mModule;
+			mInnerLayerPtrTbl[i] = layer_tbl[i].mLayerCore;
 		}
 	}
 

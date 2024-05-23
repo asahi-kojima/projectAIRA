@@ -2,11 +2,11 @@
 #include "Layer.h"
 
 
-class nnSplit : public LayerCore
+class SplitCore : public LayerCore
 {
 public:
-	nnSplit() : LayerCore(1, 2) {}
-	~nnSplit() {}
+	SplitCore() : LayerCore(1, 2) {}
+	~SplitCore() {}
 
 private:
 	virtual iotype forward(const iotype& input_tensors)override
@@ -18,5 +18,5 @@ private:
 
 Layer Split()
 {
-	return gen<nnSplit>();
+	return gen<SplitCore>();
 }
