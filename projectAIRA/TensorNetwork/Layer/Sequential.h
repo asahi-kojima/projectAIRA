@@ -15,11 +15,11 @@ public:
 
 		for (u32 i = 0, end = inner_module_num; i < end; i++)
 		{
-			if (module_tbl[i].mModule->get_input_num() != 1 || module_tbl[i].mModule->get_output_num() != 1)
+			if (module_tbl[i].mModule->get_input_tensor_num() != 1 || module_tbl[i].mModule->get_output_tensor_num() != 1)
 			{
 				std::cout << "inner module of Sequential  must be 1 input(your : "
-					<< module_tbl[i].mModule->get_input_num() << " ) and 1 output(your : "
-					<< module_tbl[i].mModule->get_output_num() << " ). " << std::endl;
+					<< module_tbl[i].mModule->get_input_tensor_num() << " ) and 1 output(your : "
+					<< module_tbl[i].mModule->get_output_tensor_num() << " ). " << std::endl;
 				exit(1);
 			}
 			mInnerLayerPtrTbl[i] = module_tbl[i].mModule;
