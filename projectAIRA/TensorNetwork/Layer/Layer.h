@@ -26,6 +26,8 @@ public:
 	{
 		return mLayerCore->forwardCore(input);
 	}
+
+	std::string mLayerName;
 };
 
 template <typename T, typename ... Args>
@@ -34,5 +36,15 @@ Layer gen(Args ... args)
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
 	layer.mLayerCore->regist_this_to_output_tensor();
+	return layer;
+}
+
+template <typename T, typename ... Args>
+Layer gen(const char* layerName, Args ... args)
+{
+	Layer layer{};
+	layer.mLayerCore = std::make_shared<T>(args...);
+	layer.mLayerCore->regist_this_to_output_tensor();
+	layer.mLayerName = layerName;
 	return layer;
 }

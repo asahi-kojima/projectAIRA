@@ -29,5 +29,5 @@ private:
 
 Layer Split()
 {
-	return gen<SplitCore>();
+	return gen<SplitCore>("Split");
 }

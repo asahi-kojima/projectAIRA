@@ -19,5 +19,5 @@ private:
 
 Layer Affine(u32 input_size, u32 output_size)
 {
-	return gen<AffineCore>(input_size, output_size);
+	return gen<AffineCore>("Affine", input_size, output_size);
 }

@@ -44,10 +44,9 @@ private:
 	//GPUを利用するか否か
 	bool _m_use_gpu;
 
-	//親と子供を把握しておく
-	//forwardとbackwardの処理で必要。
+	//親を把握しておく
+	//backwardの処理で必要。
 	std::weak_ptr<LayerCore> _m_parent_layer;
-	std::vector<std::shared_ptr<LayerCore> > _m_child_layer_tbl;
 
 	std::string _m_debug_name;//debug
 

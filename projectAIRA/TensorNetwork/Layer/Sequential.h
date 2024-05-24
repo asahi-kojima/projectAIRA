@@ -40,5 +40,5 @@ public:
 template<typename ... Args>
 Layer Sequential(Args ... args)
 {
-	return gen<SequentialCore>(args...);
+	return gen<SequentialCore>("Sequential", args...);
 }
