@@ -11,7 +11,18 @@ public:
 private:
 	virtual iotype forward(const iotype& input_tensors)override
 	{
+		if (input_tensors.size() != 1)
+		{
+			std::cout << "Error : input tensor num of SplitCore is invalid ( " << input_tensors.size() << " )" << std::endl;
+		}
+		const Tensor& input_tensor = input_tensors[0];
+		for (u32 i = 0, end = input_tensor.getDataSize(); i< end; i++)
+		{
+
+		}
+
 		return iotype{ Tensor{}, Tensor{} };
+		//return mTensorCoreTbl;
 	}
 };
 

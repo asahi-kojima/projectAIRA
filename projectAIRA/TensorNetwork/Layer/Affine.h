@@ -12,7 +12,7 @@ private:
 	virtual iotype forward(const iotype& input_tensors) override
 	{
 		std::cout << "Affine forward" << std::endl;
-		return iotype();
+		return iotype(1);
 	}
 };
 

@@ -37,10 +37,28 @@
     <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Sequential">
       <UniqueIdentifier>{ee889bd8-c17a-4f71-bd2f-b87106936e5d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Add">
+      <UniqueIdentifier>{9fff36de-a353-442c-88f0-50c05eb54ab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TensorNetwork">
+      <UniqueIdentifier>{d4dc6612-91f7-4094-b7e9-09468dd7d1d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TensorNetwork\Tensor">
+      <UniqueIdentifier>{f97c1fc6-8290-4390-acf5-3f30f3e0c0c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TensorNetwork\Layer">
+      <UniqueIdentifier>{55a24ed0-81d1-44ab-8df5-016e51d1f0a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +88,9 @@
     </ClInclude>
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
       <Filter>ヘッダー ファイル\TensorNetwork</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Add.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Add</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -19,12 +19,12 @@ public:
 			input_tensor_as_vector[i] = tensor_tbl[i];
 		}
 
-		return mLayerCore->forward(input_tensor_as_vector);
+		return mLayerCore->forwardCore(input_tensor_as_vector);
 	}
 
 	LayerCore::iotype operator()(const LayerCore::iotype& input)
 	{
-		return mLayerCore->forward(input);
+		return mLayerCore->forwardCore(input);
 	}
 };
 
@@ -33,5 +33,6 @@ Layer gen(Args ... args)
 {
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
+	layer.mLayerCore->regist_this_to_output_tensor();
 	return layer;
 }

@@ -2,8 +2,8 @@
 
 int main()
 {
-	auto seqAA = Sequential(Affine(10, 10), Affine(10, 10));
 	auto S = Split();
+	auto seqAA = Sequential(Affine(10, 10), Affine(10, 10));
 	Tensor t0{};
 
 	auto t1 = seqAA(t0);

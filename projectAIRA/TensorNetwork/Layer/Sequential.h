@@ -11,7 +11,7 @@ public:
 		//可変長テンプレートなので、分解してinnerModuleに格納している。
 		Layer layer_tbl[] = { args... };
 		const u32 inner_module_num = (sizeof(layer_tbl) / sizeof(layer_tbl[0]));
-		mInnerLayerPtrTbl.resize(inner_module_num);
+		mInnerLayerCoreTbl.resize(inner_module_num);
 
 		for (u32 i = 0, end = inner_module_num; i < end; i++)
 		{
@@ -22,7 +22,7 @@ public:
 					<< layer_tbl[i].mLayerCore->get_output_tensor_num() << " ). " << std::endl;
 				exit(1);
 			}
-			mInnerLayerPtrTbl[i] = layer_tbl[i].mLayerCore;
+			mInnerLayerCoreTbl[i] = layer_tbl[i].mLayerCore;
 		}
 	}
 
@@ -33,7 +33,7 @@ public:
 			std::cout << "input tensor num is not 1" << std::endl;
 		}
 
-		return iotype();
+		return iotype(1);
 	}
 };
 

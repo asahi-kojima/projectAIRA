@@ -132,9 +132,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp" />
+    <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp" />
+    <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common\typeinfo.h" />
+    <ClInclude Include="TensorNetwork\Layer\Add.h" />
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\LayerCore.h" />
