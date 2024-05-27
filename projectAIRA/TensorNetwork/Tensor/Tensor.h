@@ -9,14 +9,21 @@ class Tensor
 {
 public:
 	friend class LayerCore;
-	Tensor() : pTensorCore(std::make_shared<TensorCore>())
-	{}
-	Tensor(const std::shared_ptr<TensorCore>& tensorCore) : pTensorCore(tensorCore)
-	{}
+	friend class Accessor2TensorCore;
+
+	Tensor() : pTensorCore(std::make_shared<TensorCore>()) {}
+	Tensor(const Tensor& tensor) : pTensorCore(tensor.pTensorCore){}
+	Tensor(const std::shared_ptr<TensorCore>& tensorCore) : pTensorCore(tensorCore){}
+	template<typename ... Args>
+	Tensor(Args ... args)
+		: pTensorCore(std::make_shared<TensorCore>(args...))
+	{
+
+	}
 
 	void backward()
 	{
-		pTensorCore->backward();
+		pTensorCore->callBackward();
 	}
 
 	void setName(const std::string& name)//debug
@@ -24,15 +31,28 @@ public:
 		pTensorCore->setName(name);
 	}
 
-	TensorCore::DataType getData(u32 index) const
+	u32 getTensorDataSize() const
 	{
-		return pTensorCore->getData(index);
+		return pTensorCore->mDataSize;
 	}
 
-	u32 getDataSize() const
+	std::vector<u32> getShape() const
 	{
-		return pTensorCore->getDataSize();
+		return pTensorCore->getShape();
 	}
+
+
+	DataType operator[](u32 index) const
+	{
+		return pTensorCore->_m_cpu_date_address[index];
+	}
+	
+	DataType& operator[](u32 index)
+	{
+		return pTensorCore->_m_cpu_date_address[index];
+	}
+
+	Tensor operator+(const Tensor& t0);
 
 private:
 	std::shared_ptr<TensorCore> pTensorCore;

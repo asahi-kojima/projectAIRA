@@ -9,53 +9,86 @@ class LayerCore : public std::enable_shared_from_this<LayerCore>
 public:
 	using iotype = std::vector<Tensor>;
 
-	LayerCore(u32 input_tensor_num, u32 output_tensor_num) 
-		: m_input_tensor_num(input_tensor_num)
-		, m_output_tensor_num(output_tensor_num)
-		, mInputTensorCoreTbl(input_tensor_num)
-		, m_child_tensorcore_tbl(output_tensor_num)
-	{
-		for (auto& child_tensorcore : m_child_tensorcore_tbl)
-		{
-			child_tensorcore = std::make_shared<TensorCore>();
-		}
-	}
+	LayerCore(u32=1, u32=1);
+	LayerCore(u32, u32, u32);
 	virtual ~LayerCore() {}
 
-	iotype forwardCore(const iotype&);
-	void regist_this_to_output_tensor()
-	{
-		//ここが動作不良を起こすかもしれない。
-			//参照エラーが出たらここを疑う。
-		for (u32 i = 0; i < m_output_tensor_num; i++)
-		{
-			std::shared_ptr<LayerCore> shared_ptr_of_this = shared_from_this();
-			m_child_tensorcore_tbl[i]->regist_parent_layercore(shared_ptr_of_this);
-		}
-	}
-	void backward();
+	iotype callForward(const iotype&);
+	void callBackward();
+	void regist_this_to_output_tensor();
 
 	u32 get_input_tensor_num() const { return m_input_tensor_num; }
 	u32 get_output_tensor_num() const { return m_output_tensor_num; }
 
-protected:
+
+	/// <summary>
+	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
+	/// </summary>
+	/// <param name="input_tensors"></param>
+	/// <returns></returns>
 	virtual iotype forward(const iotype& input_tensors) = 0;
 
-	//パラメータのテーブル
-	std::vector<TensorCore> mParameterTbl;
+	virtual iotype operator()(const iotype& input)
+	{
+		return forward(input);
+	}
 
-	//この層が生成したテンソル
-	//（各層はテンソル用のメモリを直接見ているイメージ）
+protected:
+	bool m_init_finish = false;
+	bool m_use_gpu = false;
+	/// <summary>
+	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
+	/// </summary>
+	/// <param name="input_tensors"></param>
+	/// <returns></returns>
+	virtual void backward()
+	{
+		std::cout << "no implement" << std::endl;
+	}
+
+
+	/// <summary>
+	/// この層が生成したテンソル
+	///（各層はテンソル用のメモリを直接見ているイメージ）
+	/// </summary>
 	std::vector<std::shared_ptr<TensorCore>> m_child_tensorcore_tbl;
 
-	//順伝搬でインプットされたテンソル情報を覚えておく用
-	//これがないと逆伝搬を自動で行えなくなる。
+	/// <summary>
+	/// 順伝搬でインプットされたテンソル情報を覚えておく用
+	/// これがないと逆伝搬を自動で行えなくなる。
+	/// </summary>
 	std::vector<std::weak_ptr<TensorCore> > mInputTensorCoreTbl;
 
-	//内部Layerのリスト
-	std::vector<std::shared_ptr<LayerCore> > mInnerLayerCoreTbl;
 
 	//入力と出力のテンソルの数を記録
 	const u32 m_input_tensor_num;
 	const u32 m_output_tensor_num;
+};
+
+class Accessor2TensorCore
+{
+public:
+	inline static TensorCore::DataType* getAddressOnCpuFrom(Tensor tensor)
+	{
+		return tensor.pTensorCore->_m_cpu_date_address;
+	}
+	inline static TensorCore::DataType* getAddressOnCpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
+	{
+		return tensor_ptr->_m_cpu_date_address;
+	}
+
+	inline static u32 getDataSize(Tensor tensor)
+	{
+		return tensor.pTensorCore->mDataSize;
+	}
+
+	inline static u32 getDataSize(const std::shared_ptr<TensorCore>& tensor_ptr)
+	{
+		return tensor_ptr->mDataSize;
+	}
+
+	inline static std::vector<u32> getTensorShape(const Tensor& tensor)
+	{
+		return  tensor.getShape();
+	}
 };

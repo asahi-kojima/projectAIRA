@@ -6,8 +6,15 @@ class Layer
 {
 public:
 	std::shared_ptr<LayerCore> mLayerCore;
+
+	LayerCore::iotype operator()(const LayerCore::iotype& input) const
+	{
+		return mLayerCore->callForward(input);
+	}
+
+
 	template <typename ... Args>
-	LayerCore::iotype operator()(Args ... args)
+	LayerCore::iotype operator()(Args ... args) const
 	{
 		Tensor tensor_tbl[] = { args... };
 		const u32 input_tensor_num = (sizeof(tensor_tbl) / sizeof(tensor_tbl[0]));
@@ -19,13 +26,9 @@ public:
 			input_tensor_as_vector[i] = tensor_tbl[i];
 		}
 
-		return mLayerCore->forwardCore(input_tensor_as_vector);
+		return mLayerCore->callForward(input_tensor_as_vector);
 	}
 
-	LayerCore::iotype operator()(const LayerCore::iotype& input)
-	{
-		return mLayerCore->forwardCore(input);
-	}
 
 	std::string mLayerName;
 };
@@ -35,7 +38,7 @@ Layer gen(Args ... args)
 {
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
-	layer.mLayerCore->regist_this_to_output_tensor();
+	//layer.mLayerCore->regist_this_to_output_tensor();
 	return layer;
 }
 
@@ -44,7 +47,7 @@ Layer gen(const char* layerName, Args ... args)
 {
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
-	layer.mLayerCore->regist_this_to_output_tensor();
+	//layer.mLayerCore->regist_this_to_output_tensor();
 	layer.mLayerName = layerName;
 	return layer;
 }

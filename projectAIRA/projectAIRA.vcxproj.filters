@@ -49,6 +49,9 @@
     <Filter Include="ソース ファイル\TensorNetwork\Layer">
       <UniqueIdentifier>{55a24ed0-81d1-44ab-8df5-016e51d1f0a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\ReLU">
+      <UniqueIdentifier>{4cbec78d-ba4e-463c-a286-f1edbafe9c13}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp">
@@ -58,6 +61,15 @@
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
     </ClCompile>
     <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Layer\Affine.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Layer\Add.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -92,5 +104,16 @@
     <ClInclude Include="TensorNetwork\Layer\Add.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer\Add</Filter>
     </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\AddAsInner.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Add</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="TensorNetwork\Layer\Add.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

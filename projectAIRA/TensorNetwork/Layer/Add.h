@@ -5,19 +5,13 @@
 class AddCore : public LayerCore
 {
 public:
-	AddCore(u32 input_size, u32  output_size) : LayerCore(2, 1) {}
+	AddCore();
 	~AddCore() {}
 
 private:
-	virtual iotype forward(const iotype& input_tensors) override
-	{
-		std::cout << "Add forward" << std::endl;
-		return iotype();
-	}
+	virtual iotype forward(const iotype& input_tensors) override;
+	virtual void backward() override;
 };
 
 
-Layer Add(u32 input_size, u32 output_size)
-{
-	return gen<AddCore>(input_size, output_size);
-}
+Layer Add();

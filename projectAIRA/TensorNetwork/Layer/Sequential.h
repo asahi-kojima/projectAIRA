@@ -10,10 +10,10 @@ public:
 	{
 		//可変長テンプレートなので、分解してinnerModuleに格納している。
 		Layer layer_tbl[] = { args... };
-		const u32 inner_module_num = (sizeof(layer_tbl) / sizeof(layer_tbl[0]));
-		mInnerLayerCoreTbl.resize(inner_module_num);
+		const u32 inner_layer_num = (sizeof(layer_tbl) / sizeof(layer_tbl[0]));
+		mInnerLayer.resize(inner_layer_num);
 
-		for (u32 i = 0, end = inner_module_num; i < end; i++)
+		for (u32 i = 0, end = inner_layer_num; i < end; i++)
 		{
 			if (layer_tbl[i].mLayerCore->get_input_tensor_num() != 1 || layer_tbl[i].mLayerCore->get_output_tensor_num() != 1)
 			{
@@ -22,7 +22,7 @@ public:
 					<< layer_tbl[i].mLayerCore->get_output_tensor_num() << " ). " << std::endl;
 				exit(1);
 			}
-			mInnerLayerCoreTbl[i] = layer_tbl[i].mLayerCore;
+			mInnerLayer[i] = layer_tbl[i];
 		}
 	}
 
@@ -32,9 +32,16 @@ public:
 		{
 			std::cout << "input tensor num is not 1" << std::endl;
 		}
-
-		return iotype(1);
+		iotype tensor = input;
+		for (const auto& layer : mInnerLayer)
+		{
+			tensor = layer(tensor);
+		}
+		return tensor;
 	}
+
+private:
+	std::vector<Layer> mInnerLayer;
 };
 
 template<typename ... Args>
