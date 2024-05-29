@@ -141,7 +141,7 @@ public:
 
 	void regist_parent_layercore(const std::shared_ptr<LayerCore>& parent_layercore)
 	{
-		_m_parent_layer = parent_layercore;
+		_m_upstream_layer = parent_layercore;
 	}
 
 	void set_parent_exist(bool parent_exist) { m_parent_exist = parent_exist; }
@@ -154,6 +154,8 @@ public:
 	}
 
 private:
+	void disconnect_bidirection();
+	void connect(const std::shared_ptr<LayerCore>&, u32);
 	//識別用の名前：デバッグで使うことを想定
 	std::string _m_debug_name;
 
@@ -178,8 +180,11 @@ private:
 
 	//親を把握しておく
 	//backwardの処理で必要。
-	std::weak_ptr<LayerCore> _m_parent_layer;
+	std::weak_ptr<LayerCore> _m_upstream_layer;
+	s32 _m_location_in_upstream_layer = -1;
 
+	std::shared_ptr<LayerCore> _m_downstream_layer;
+	s32 _m_location_in_downstram_layer = -1;
 	//層に紐づく場合のみtrueになり、
 	//かつその場合のみ、逆伝搬が走る。
 	bool m_parent_exist = false;

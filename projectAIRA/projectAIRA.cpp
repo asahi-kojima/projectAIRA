@@ -64,7 +64,7 @@ int main()
 
 		Tensor s1(10, 3, 28, 28); init(s1, 1); s1.setName("s1");
 		
-		auto t3 = add2(t2[0], s1);
+		auto t3 = add2(t2[0], t2[0]);
 		t3[0].backward();
 	}
 }

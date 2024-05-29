@@ -7,6 +7,7 @@
 class LayerCore : public std::enable_shared_from_this<LayerCore>
 {
 public:
+	friend class TensorCore;
 	using iotype = std::vector<Tensor>;
 
 	LayerCore(u32=1, u32=1);
@@ -64,6 +65,12 @@ protected:
 	//入力と出力のテンソルの数を記録
 	const u32 m_input_tensor_num;
 	const u32 m_output_tensor_num;
+
+private:
+	void disconnect_bidirection(s32 location)
+	{
+		mInputTensorCoreTbl[location].reset();
+	}
 };
 
 class Accessor2TensorCore

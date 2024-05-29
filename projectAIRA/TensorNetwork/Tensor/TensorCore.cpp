@@ -31,7 +31,7 @@ void TensorCore::to_cuda(const std::string& device_name)
 
 void TensorCore::callBackward() const
 {
-	if (std::shared_ptr<LayerCore> parentLayerCore = _m_parent_layer.lock())
+	if (std::shared_ptr<LayerCore> parentLayerCore = _m_upstream_layer.lock())
 	{
 		parentLayerCore->callBackward();
 	}
@@ -46,6 +46,22 @@ void TensorCore::callBackward() const
 	}
 }
 
+
+void TensorCore::disconnect_bidirection()
+{
+	if (_m_downstream_layer)
+	{
+		_m_downstream_layer->disconnect_bidirection(_m_location_in_downstram_layer);
+		_m_downstream_layer.reset();
+		_m_location_in_downstram_layer = -1;
+	}
+}
+
+void TensorCore::connect(const std::shared_ptr<LayerCore>& layercore, u32 location)
+{
+	_m_downstream_layer = layercore;
+	_m_location_in_downstram_layer = location;
+}
 
 
 void TensorCore::deleteArrayAddress(DataType* p)

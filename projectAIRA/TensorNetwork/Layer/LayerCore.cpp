@@ -46,7 +46,19 @@ LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
 	//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
 	for (u32 i = 0; i < m_input_tensor_num; i++)
 	{
-		mInputTensorCoreTbl[i] = input_tensors[i].pTensorCore;
+		if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
+		{
+			//上流テンソルに依頼して、双方向にリンクを切ってもらう。
+			p->disconnect_bidirection();
+		}
+
+		auto& tensorcore = input_tensors[i].pTensorCore;
+		if (tensorcore->_m_downstream_layer)
+		{
+			tensorcore->disconnect_bidirection();
+		}
+		mInputTensorCoreTbl[i] =  tensorcore;
+		tensorcore->connect(shared_from_this(), i);
 	}
 
 
