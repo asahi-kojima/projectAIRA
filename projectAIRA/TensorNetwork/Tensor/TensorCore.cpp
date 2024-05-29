@@ -51,16 +51,16 @@ void TensorCore::disconnect_bidirection()
 {
 	if (_m_downstream_layer)
 	{
-		_m_downstream_layer->disconnect_bidirection(_m_location_in_downstram_layer);
+		_m_downstream_layer->disconnect_bidirection(_m_location_in_downstream_layer);
 		_m_downstream_layer.reset();
-		_m_location_in_downstram_layer = -1;
+		_m_location_in_downstream_layer = -1;
 	}
 }
 
 void TensorCore::connect(const std::shared_ptr<LayerCore>& layercore, u32 location)
 {
 	_m_downstream_layer = layercore;
-	_m_location_in_downstram_layer = location;
+	_m_location_in_downstream_layer = location;
 }
 
 

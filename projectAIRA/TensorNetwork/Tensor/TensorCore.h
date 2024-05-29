@@ -176,7 +176,8 @@ private:
 	std::vector<u32> mTensorShape;
 
 	//GPUを利用するか否か
-	bool _m_on_cuda;
+	bool _m_on_cuda = false;
+	bool _m_init_gpu_resource = false;
 
 	//親を把握しておく
 	//backwardの処理で必要。
@@ -184,7 +185,7 @@ private:
 	s32 _m_location_in_upstream_layer = -1;
 
 	std::shared_ptr<LayerCore> _m_downstream_layer;
-	s32 _m_location_in_downstram_layer = -1;
+	s32 _m_location_in_downstream_layer = -1;
 	//層に紐づく場合のみtrueになり、
 	//かつその場合のみ、逆伝搬が走る。
 	bool m_parent_exist = false;

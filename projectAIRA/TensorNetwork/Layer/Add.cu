@@ -32,17 +32,25 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 	auto dataSize_lhs = Accessor2TensorCore::getDataSize(input_tensors[0]);
 	auto dataSize_rhs = Accessor2TensorCore::getDataSize(input_tensors[1]);
 
+	//形状は任意でいいが、要素数が一致していないと演算が出来ない。
 	if (dataSize_lhs != dataSize_rhs)
 	{
 		std::cout << "Input tensor size between LHS & RHS is not equal@AddCore::forward" << std::endl;
 		exit(1);
 	}
+
+	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
 		std::vector<u32> shape = Accessor2TensorCore::getTensorShape(input_tensors[0]);
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
 		child_tensorcore = std::make_shared<TensorCore>(true, shape);
 		child_tensorcore->regist_parent_layercore(shared_from_this());
+
+		if (Accessor2TensorCore::on_cuda(input_tensors[0]))
+		{
+			child_tensorcore->to_cuda("");
+		}
 		m_init_finish = true;
 	}
 

@@ -31,21 +31,28 @@ LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
 		exit(1);
 	}
 
+
+	bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
+	for (u32 i = 1; i < m_input_tensor_num; i++)
 	{
-		for (u32 i = 0; i < m_input_tensor_num; i++)
+		if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
 		{
-			if (input_tensors[i].pTensorCore->_m_on_cuda != m_use_gpu)
-			{
-				std::cout << "CPU/GPU setting contradict!" << std::endl;
-				std::cout << i << "th input is " << input_tensors[i].pTensorCore->_m_on_cuda << "." << std::endl;
-				std::cout << "But Layer setting is " << m_use_gpu << "." << std::endl;
-			}
+			std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
+			exit(1);
 		}
+	}
+
+	if (m_init_finish && (on_cuda != m_use_gpu))
+	{
+		std::cout << "Between input and layer, CPU/GPU setting contradict!" << std::endl;
+		exit(1);
 	}
 
 	//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
 	for (u32 i = 0; i < m_input_tensor_num; i++)
 	{
+		//過去に入力があった場合、i番目の入力スロットに過去の入力テンソルが登録されている。
+		//それをここで一度解除する。
 		if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
 		{
 			//上流テンソルに依頼して、双方向にリンクを切ってもらう。
@@ -53,11 +60,14 @@ LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
 		}
 
 		auto& tensorcore = input_tensors[i].pTensorCore;
+
+		//過去にどこかの層に入力されていた場合、下流の層情報が登録されている。
+		//ここでそれを解除する。
 		if (tensorcore->_m_downstream_layer)
 		{
 			tensorcore->disconnect_bidirection();
 		}
-		mInputTensorCoreTbl[i] =  tensorcore;
+		mInputTensorCoreTbl[i] = tensorcore;
 		tensorcore->connect(shared_from_this(), i);
 	}
 

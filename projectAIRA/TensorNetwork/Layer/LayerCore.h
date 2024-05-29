@@ -108,4 +108,14 @@ public:
 	{
 		return  tensor.getShape();
 	}
+
+	inline static bool on_cuda(const Tensor& tensor)
+	{
+		return tensor.pTensorCore->_m_on_cuda;
+	}
+
+	/*inline static void set_on_cuda(const std::shared_ptr<TensorCore>& tensor_ptr, bool flag)
+	{
+		tensor_ptr->_m_on_cuda = flag;
+	}*/
 };

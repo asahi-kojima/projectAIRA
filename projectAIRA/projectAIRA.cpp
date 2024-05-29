@@ -45,28 +45,34 @@ void confirm(const Tensor& tensor)
 
 int main()
 {
-	auto add0 = AddAsInner(); add0.mLayerName = "add0";
-	auto add1 = Add(); add1.mLayerName = "add1";
-	auto add2 = AddAsInner(); add2.mLayerName = "add2";
-
-	Tensor t0(10, 3, 28, 28); init(t0, 1);
-	Tensor s0(false, 10, 3, 28, 28); init_linear(s0, 2);
-	for (u32 i = 0; i < 2; i++)
+	for (u32 i = 0; i < 100; i++)
 	{
-		auto t1 = add0(t0, s0);
-		t1[0].setName("t1");
+		const u32 N = 10;
+		auto add0 = AddAsInner(); add0.mLayerName = "add0";
+		auto add1 = Add(); add1.mLayerName = "add1";
+		auto add2 = AddAsInner(); add2.mLayerName = "add2";
 
-		Tensor s0(10, 3, 28, 28); init(s0, 1);
+		Tensor t0(N, 3, 28, 28); init(t0, 1);
+		Tensor s0(false, N, 3, 28, 28); init_linear(s0, 2);
+		for (u32 i = 0; i < 2; i++)
+		{
+			auto t1 = add0(t0, s0);
+			t1[0].setName("t1");
 
-		auto t2 = add1(t1[0], t1[0]);
-		t2[0].setName("t2");
+			Tensor s0(N, 3, 28, 28); init(s0, 1);
+
+			auto t2 = add1(t1[0], s0);
+			t2[0].setName("t2");
 
 
-		Tensor s1(10, 3, 28, 28); init(s1, 1); s1.setName("s1");
-		
-		auto t3 = add2(t2[0], t2[0]);
-		t3[0].backward();
+			Tensor s1(N, 3, 28, 28); init(s1, 1); s1.setName("s1");
+
+			auto t3 = add2(t2[0],s1);
+			t3[0].backward();
+		}
 	}
+
+	std::cout << "free check" << std::endl;
 }
 
 
