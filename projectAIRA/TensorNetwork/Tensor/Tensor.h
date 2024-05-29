@@ -44,12 +44,12 @@ public:
 
 	DataType operator[](u32 index) const
 	{
-		return pTensorCore->_m_cpu_date_address[index];
+		return pTensorCore->_m_cpu_data_address[index];
 	}
 	
 	DataType& operator[](u32 index)
 	{
-		return pTensorCore->_m_cpu_date_address[index];
+		return pTensorCore->_m_cpu_data_address[index];
 	}
 
 	Tensor operator+(const Tensor& t0);

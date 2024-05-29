@@ -29,26 +29,42 @@ void init_linear(Tensor& t, DataType value)
 	}
 }
 
+void confirm(const Tensor& tensor)
+{
+	const auto dataSize = Accessor2TensorCore::getDataSize(tensor);
+	const auto pointer = Accessor2TensorCore::getAddressOnCpuFrom(tensor);
+
+	std::vector<TensorCore::DataType> v(dataSize);
+	for (u32 i = 0; i < dataSize; i++)
+	{
+		v[i] = pointer[i];
+	}
+	int x = 1 + 1;
+}
+
 
 int main()
 {
-	auto add0 = AddAsInner();
-	auto add1 = AddAsInner();
-	auto add2 = AddAsInner();
+	auto add0 = AddAsInner(); add0.mLayerName = "add0";
+	auto add1 = Add(); add1.mLayerName = "add1";
+	auto add2 = AddAsInner(); add2.mLayerName = "add2";
 
 	Tensor t0(10, 3, 28, 28); init(t0, 1);
 	Tensor s0(false, 10, 3, 28, 28); init_linear(s0, 2);
 	for (u32 i = 0; i < 2; i++)
 	{
 		auto t1 = add0(t0, s0);
-		Tensor s1(10, 3, 28, 28);
+		t1[0].setName("t1");
+
+		Tensor s0(10, 3, 28, 28); init(s0, 1);
+
+		auto t2 = add1(t1[0], t1[0]);
+		t2[0].setName("t2");
+
+
+		Tensor s1(10, 3, 28, 28); init(s1, 1); s1.setName("s1");
 		
-		auto t2 = add1(t1[0], s1);
-		Tensor s2(10, 3, 28, 28);
-
-		//auto [u0, u1] = convert(S(t1));
-		auto t3 = add2(t2[0], s2);
-
+		auto t3 = add2(t2[0], s1);
 		t3[0].backward();
 	}
 }

@@ -55,7 +55,7 @@ public:
 
 		//00000000000000000000000000000000000000000000000000000000
 		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_date_address, mDataSize);
+		mallocOnCPU(_m_cpu_data_address, mDataSize);
 		//111111111111111111111111111111111111111111111111111111111
 	}
 
@@ -82,7 +82,7 @@ public:
 
 		//00000000000000000000000000000000000000000000000000000000
 		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_date_address, mDataSize);
+		mallocOnCPU(_m_cpu_data_address, mDataSize);
 		//111111111111111111111111111111111111111111111111111111111
 	}
 
@@ -109,10 +109,10 @@ public:
 
 		//00000000000000000000000000000000000000000000000000000000
 		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_date_address, mDataSize);
+		mallocOnCPU(_m_cpu_data_address, mDataSize);
 		if (_m_need_grad)
 		{
-			mallocOnCPU(_m_cpu_grad_date_address, mDataSize);
+			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
 		}
 		//111111111111111111111111111111111111111111111111111111111
 	}
@@ -135,9 +135,9 @@ public:
 		{
 			assert(0);
 		}
-		return _m_cpu_date_address[index]; 
+		return _m_cpu_data_address[index]; 
 	}
-	DataType getData(u32 index) const { return _m_cpu_date_address[index]; }
+	DataType getData(u32 index) const { return _m_cpu_data_address[index]; }
 
 	void regist_parent_layercore(const std::shared_ptr<LayerCore>& parent_layercore)
 	{
@@ -154,12 +154,16 @@ public:
 	}
 
 private:
+	//識別用の名前：デバッグで使うことを想定
+	std::string _m_debug_name;
+
+
 	//データが置いてあるアドレス
-	DataType* _m_cpu_date_address = nullptr;
+	DataType* _m_cpu_data_address = nullptr;
 	DataType* _m_gpu_data_address = nullptr;
 
 	//勾配情報。以下のフラグが立っている場合のみ確保する
-	DataType* _m_cpu_grad_date_address = nullptr;
+	DataType* _m_cpu_grad_data_address = nullptr;
 	DataType* _m_gpu_grad_data_address = nullptr;
 	//勾配が必要か。末端などでは必要ない。
 	bool _m_need_grad;
@@ -180,8 +184,6 @@ private:
 	//かつその場合のみ、逆伝搬が走る。
 	bool m_parent_exist = false;
 
-	//識別用の名前：デバッグで使うことを想定
-	std::string _m_debug_name;
 
 	void deleteArrayAddress(DataType* p);
 

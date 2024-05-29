@@ -15,7 +15,13 @@ namespace
 
 	__global__ void add_imple_gpu(DataType* output_ptr, DataType* input0_ptr, DataType* input1_ptr, u32 data_size)
 	{
+		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
+		if (xid >= data_size)
+		{
+			return;
+		}
 
+		output_ptr[xid] = input0_ptr[xid] + input1_ptr[xid];
 	}
 
 }
@@ -26,13 +32,13 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 	auto dataSize_lhs = Accessor2TensorCore::getDataSize(input_tensors[0]);
 	auto dataSize_rhs = Accessor2TensorCore::getDataSize(input_tensors[1]);
 
+	if (dataSize_lhs != dataSize_rhs)
+	{
+		std::cout << "Input tensor size between LHS & RHS is not equal@AddCore::forward" << std::endl;
+		exit(1);
+	}
 	if (!m_init_finish)
 	{
-		if (dataSize_lhs != dataSize_rhs)
-		{
-			std::cout << "Input tensor size between LHS & RHS is not equal@AddCore::forward" << std::endl;
-			exit(1);
-		}
 		std::vector<u32> shape = Accessor2TensorCore::getTensorShape(input_tensors[0]);
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
 		child_tensorcore = std::make_shared<TensorCore>(true, shape);
@@ -47,9 +53,17 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 		exit(1);
 	}
 
+
+
 	if (m_use_gpu)
 	{
+		auto output_address = Accessor2TensorCore::getAddressOnGpuFrom(m_child_tensorcore_tbl[0]);
+		auto input_address0 = Accessor2TensorCore::getAddressOnGpuFrom(input_tensors[0]);
+		auto input_address1 = Accessor2TensorCore::getAddressOnGpuFrom(input_tensors[1]);
 
+		dim3 block(256);
+		dim3 grid((dataSize + block.x - 1) / block.x);
+		add_imple_gpu << <grid, block >> > (output_address, input_address0, input_address1, dataSize);
 	}
 	else
 	{
@@ -61,3 +75,5 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 
 	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
 }
+
+

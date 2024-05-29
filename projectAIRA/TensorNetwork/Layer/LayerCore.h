@@ -46,6 +46,7 @@ protected:
 		std::cout << "no implement" << std::endl;
 	}
 
+	std::vector<std::shared_ptr<TensorCore> > m_parameter_tbl;
 
 	/// <summary>
 	/// ‚±‚Ì‘w‚ª¶¬‚µ‚½ƒeƒ“ƒ\ƒ‹
@@ -70,11 +71,20 @@ class Accessor2TensorCore
 public:
 	inline static TensorCore::DataType* getAddressOnCpuFrom(Tensor tensor)
 	{
-		return tensor.pTensorCore->_m_cpu_date_address;
+		return tensor.pTensorCore->_m_cpu_data_address;
 	}
 	inline static TensorCore::DataType* getAddressOnCpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
 	{
-		return tensor_ptr->_m_cpu_date_address;
+		return tensor_ptr->_m_cpu_data_address;
+	}
+
+	inline static TensorCore::DataType* getAddressOnGpuFrom(Tensor tensor)
+	{
+		return tensor.pTensorCore->_m_gpu_data_address;
+	}
+	inline static TensorCore::DataType* getAddressOnGpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
+	{
+		return tensor_ptr->_m_gpu_data_address;
 	}
 
 	inline static u32 getDataSize(Tensor tensor)

@@ -4,9 +4,9 @@
 
 TensorCore::~TensorCore()
 {
-	deleteArrayAddress(_m_cpu_date_address);
+	deleteArrayAddress(_m_cpu_data_address);
 	deleteArrayAddress(_m_gpu_data_address);
-	deleteArrayAddress(_m_cpu_grad_date_address);
+	deleteArrayAddress(_m_cpu_grad_data_address);
 	deleteArrayAddress(_m_gpu_grad_data_address);
 }
 
@@ -21,11 +21,11 @@ void TensorCore::to_cuda(const std::string& device_name)
 	//CUDA用のメモリを確保する。
 	//そのメモリにデータをコピーする。
 	mallocOnGPU(_m_gpu_data_address, mDataSize);
-	memcpyFromCPUToGPU(_m_cpu_date_address, _m_gpu_data_address, mDataSize);
+	memcpyFromCPUToGPU(_m_cpu_data_address, _m_gpu_data_address, mDataSize);
 	if (_m_need_grad)
 	{
 		mallocOnGPU(_m_gpu_grad_data_address, mDataSize);
-		memcpyFromCPUToGPU(_m_cpu_grad_date_address, _m_gpu_grad_data_address, mDataSize);
+		memcpyFromCPUToGPU(_m_cpu_grad_data_address, _m_gpu_grad_data_address, mDataSize);
 	}
 }
 

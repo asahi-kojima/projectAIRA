@@ -14,10 +14,6 @@ private:
 		std::cout << "Affine forward" << std::endl;
 
 		auto t = input_tensors;
-		//for (const auto& inner_layer : mInnerLayerCoreTbl)
-		//{
-		//	t = inner_layer->forward(t);
-		//}
 
 		return t;
 	}
