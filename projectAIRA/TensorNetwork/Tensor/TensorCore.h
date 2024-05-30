@@ -19,6 +19,12 @@
     }                                                                          \
 }
 
+#ifdef _DEBUG
+#define CUDA_SYNCHRONIZE_DEBUG CHECK(cudaDeviceSynchronize())
+#else
+#define CUDA_SYNCHRONIZE_DEBUG {}
+#endif
+
 class LayerCore;
 class Accessor2TensorCore;
 class Tensor;
@@ -56,6 +62,10 @@ public:
 		//00000000000000000000000000000000000000000000000000000000
 		//データサイズが上で確定したので、それに従って確保する。
 		mallocOnCPU(_m_cpu_data_address, mDataSize);
+		if (_m_need_grad)
+		{
+			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
+		}
 		//111111111111111111111111111111111111111111111111111111111
 	}
 
@@ -192,6 +202,7 @@ private:
 
 
 	void deleteArrayAddress(DataType* p);
+	void cuda_free(DataType* p);
 
 	void mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num);
 

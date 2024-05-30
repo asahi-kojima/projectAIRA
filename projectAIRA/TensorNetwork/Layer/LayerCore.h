@@ -1,6 +1,7 @@
 #pragma once
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include "Tensor/Tensor.h"
-
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。
 //問題が起きたらここを疑う。
@@ -29,14 +30,12 @@ public:
 	/// <returns></returns>
 	virtual iotype forward(const iotype& input_tensors) = 0;
 
-	virtual iotype operator()(const iotype& input)
-	{
-		return forward(input);
-	}
+
 
 protected:
+	bool unique_implimention_layer = true;
 	bool m_init_finish = false;
-	bool m_use_gpu = false;
+	bool m_on_cuda = false;
 	/// <summary>
 	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
 	/// </summary>
@@ -44,6 +43,7 @@ protected:
 	/// <returns></returns>
 	virtual void backward()
 	{
+		unique_implimention_layer = false;
 		std::cout << "no implement" << std::endl;
 	}
 
@@ -84,7 +84,10 @@ public:
 	{
 		return tensor_ptr->_m_cpu_data_address;
 	}
-
+	inline static TensorCore::DataType* getGradAddressOnCpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
+	{
+		return tensor_ptr->_m_cpu_grad_data_address;
+	}
 	inline static TensorCore::DataType* getAddressOnGpuFrom(Tensor tensor)
 	{
 		return tensor.pTensorCore->_m_gpu_data_address;
@@ -92,6 +95,10 @@ public:
 	inline static TensorCore::DataType* getAddressOnGpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
 	{
 		return tensor_ptr->_m_gpu_data_address;
+	}
+	inline static TensorCore::DataType* getGradAddressOnGpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
+	{
+		return tensor_ptr->_m_gpu_grad_data_address;
 	}
 
 	inline static u32 getDataSize(Tensor tensor)
@@ -113,9 +120,14 @@ public:
 	{
 		return tensor.pTensorCore->_m_on_cuda;
 	}
-
-	/*inline static void set_on_cuda(const std::shared_ptr<TensorCore>& tensor_ptr, bool flag)
+	inline static bool get_need_grad(const std::shared_ptr<TensorCore>& tensor_ptr)
 	{
-		tensor_ptr->_m_on_cuda = flag;
-	}*/
+		return tensor_ptr->_m_need_grad;
+	}
+
+	
 };
+
+
+LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1);
+LayerCore::iotype operator+(const Tensor& input0, const Tensor& input1);

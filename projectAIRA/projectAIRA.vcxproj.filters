@@ -28,18 +28,6 @@
     <Filter Include="ヘッダー ファイル\TensorNetwork\Tensor">
       <UniqueIdentifier>{c2dcaf6e-8e69-4f65-93d9-110de082a9b1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Affine">
-      <UniqueIdentifier>{179403e5-7560-4be8-a8d3-a8f74349e40e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Split">
-      <UniqueIdentifier>{5d6d826c-b183-40ab-b6ec-972181193724}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Sequential">
-      <UniqueIdentifier>{ee889bd8-c17a-4f71-bd2f-b87106936e5d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Add">
-      <UniqueIdentifier>{9fff36de-a353-442c-88f0-50c05eb54ab2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\TensorNetwork">
       <UniqueIdentifier>{d4dc6612-91f7-4094-b7e9-09468dd7d1d3}</UniqueIdentifier>
     </Filter>
@@ -48,9 +36,6 @@
     </Filter>
     <Filter Include="ソース ファイル\TensorNetwork\Layer">
       <UniqueIdentifier>{55a24ed0-81d1-44ab-8df5-016e51d1f0a5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\ReLU">
-      <UniqueIdentifier>{4cbec78d-ba4e-463c-a286-f1edbafe9c13}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -63,13 +48,7 @@
     <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
-    <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
-      <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
-    </ClCompile>
     <ClCompile Include="TensorNetwork\Layer\Affine.cpp">
-      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
-    </ClCompile>
-    <ClCompile Include="TensorNetwork\Layer\Add.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,30 +68,36 @@
     <ClInclude Include="TensorNetwork\Layer\Layer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\Affine.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Affine</Filter>
-    </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\Split.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Split</Filter>
-    </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\Sequential.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Sequential</Filter>
-    </ClInclude>
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
       <Filter>ヘッダー ファイル\TensorNetwork</Filter>
     </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
     <ClInclude Include="TensorNetwork\Layer\Add.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Add</Filter>
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
     <ClInclude Include="TensorNetwork\Layer\AddAsInner.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Add</Filter>
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h">
+    <ClInclude Include="TensorNetwork\Layer\Affine.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Sequential.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Split.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\ReLU.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\ReLU.cu">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
   </ItemGroup>

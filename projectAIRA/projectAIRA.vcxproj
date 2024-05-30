@@ -133,10 +133,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp" />
-    <ClCompile Include="TensorNetwork\Layer\Add.cpp" />
     <ClCompile Include="TensorNetwork\Layer\Affine.cpp" />
     <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp" />
-    <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp" />
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -147,6 +145,7 @@
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\LayerCore.h" />
     <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
+    <ClInclude Include="TensorNetwork\Layer\ReLU.h" />
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h" />
@@ -157,6 +156,7 @@
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
       <FileType>Document</FileType>
     </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\ReLU.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

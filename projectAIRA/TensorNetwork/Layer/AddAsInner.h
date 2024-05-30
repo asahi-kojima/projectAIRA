@@ -15,8 +15,6 @@ public:
 		return mAdd(input_tensors);
 	}
 
-
-
 private:
 	Layer mAdd;
 };

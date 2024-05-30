@@ -52,7 +52,11 @@ public:
 		return pTensorCore->_m_cpu_data_address[index];
 	}
 
-	Tensor operator+(const Tensor& t0);
+
+	void to_cuda()
+	{
+		pTensorCore->to_cuda("");
+	}
 
 private:
 	std::shared_ptr<TensorCore> pTensorCore;

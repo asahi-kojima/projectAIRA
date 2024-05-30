@@ -5,9 +5,9 @@
 TensorCore::~TensorCore()
 {
 	deleteArrayAddress(_m_cpu_data_address);
-	deleteArrayAddress(_m_gpu_data_address);
+	cuda_free(_m_gpu_data_address);
 	deleteArrayAddress(_m_cpu_grad_data_address);
-	deleteArrayAddress(_m_gpu_grad_data_address);
+	cuda_free(_m_gpu_grad_data_address);
 }
 
 
@@ -72,6 +72,14 @@ void TensorCore::deleteArrayAddress(DataType* p)
 	}
 }
 
+void TensorCore::cuda_free(DataType* p)
+{
+	if (p)
+	{
+		cudaFree(p);
+	}
+}
+
 void TensorCore::mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num)
 {
 	pointer_on_cpu = new DataType[element_num];
@@ -79,10 +87,12 @@ void TensorCore::mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num)
 
 void TensorCore::mallocOnGPU(DataType*& pointer_on_gpu, const u32 element_num)
 {
-	CHECK(cudaMalloc((void**)(pointer_on_gpu), element_num * sizeof(DataType)););
+	CHECK(cudaMalloc((void**)(&pointer_on_gpu), element_num * sizeof(DataType)););
+	CUDA_SYNCHRONIZE_DEBUG;
 }
 
 void TensorCore::memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address, u32 data_size)
 {
 	CHECK(cudaMemcpy(gpu_address, cpu_address, data_size * sizeof(DataType), cudaMemcpyHostToDevice));
+	CUDA_SYNCHRONIZE_DEBUG;
 }
