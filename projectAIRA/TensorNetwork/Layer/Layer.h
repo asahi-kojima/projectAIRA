@@ -5,8 +5,6 @@
 class Layer
 {
 public:
-	std::shared_ptr<LayerCore> mLayerCore;
-
 	LayerCore::iotype operator()(const LayerCore::iotype& input) const
 	{
 		return mLayerCore->callForward(input);
@@ -30,7 +28,12 @@ public:
 	}
 
 
+	//void save() {mLayerCore}
+	//void load();
+
+	std::shared_ptr<LayerCore> mLayerCore;
 	std::string mLayerName;
+private:
 };
 
 template <typename T, typename ... Args>
@@ -38,7 +41,6 @@ Layer gen(Args ... args)
 {
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
-	//layer.mLayerCore->regist_this_to_output_tensor();
 	return layer;
 }
 
@@ -47,7 +49,6 @@ Layer gen(const char* layerName, Args ... args)
 {
 	Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
-	//layer.mLayerCore->regist_this_to_output_tensor();
 	layer.mLayerName = layerName;
 	return layer;
 }

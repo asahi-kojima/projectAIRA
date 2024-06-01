@@ -8,6 +8,7 @@ LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num)
 	, mInputTensorCoreTbl(input_tensor_num)
 	, m_parameter_tbl(0)
 	, m_child_tensorcore_tbl(0)
+	, m_downstream_tensor_backward_finish(0)
 {
 }
 
@@ -17,6 +18,17 @@ LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tens
 	, mInputTensorCoreTbl(input_tensor_num)
 	, m_parameter_tbl(0)
 	, m_child_tensorcore_tbl(child_tensorcore_num)
+	, m_downstream_tensor_backward_finish(child_tensorcore_num)
+{
+}
+
+LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num, u32 parameter_num)
+	: m_input_tensor_num(input_tensor_num)
+	, m_output_tensor_num(output_tensor_num)
+	, mInputTensorCoreTbl(input_tensor_num)
+	, m_parameter_tbl(parameter_num)
+	, m_child_tensorcore_tbl(child_tensorcore_num)
+	, m_downstream_tensor_backward_finish(child_tensorcore_num)
 {
 }
 
@@ -78,6 +90,13 @@ LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
 			mInputTensorCoreTbl[i] = tensorcore;
 			tensorcore->connect(shared_from_this(), i);
 		}
+
+		for (auto&& is_finish : m_downstream_tensor_backward_finish)
+		{
+			is_finish = false;
+		}
+
+
 	}
 	//Še‘w–ˆ‚Ì‡“`”À‚ğÀÛ‚ÉÀs‚·‚éB
 	return forward(input_tensors);

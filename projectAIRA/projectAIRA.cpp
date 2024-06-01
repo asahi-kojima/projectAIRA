@@ -1,6 +1,7 @@
 ﻿#include "root_TensorNetwork.h"
 #include <tuple>
 #include <cassert>
+#include <random>
 #include "Layer/Add.h"
 #include "Layer/AddAsInner.h"
 #include "Layer/ReLU.h"
@@ -19,26 +20,38 @@ std::tuple<Tensor, Tensor> convert(const LayerCore::iotype& tensor_vec)
 //開発用
 void init(Tensor& t, DataType value)
 {
-	for (u32 i = 0; i < t.getTensorDataSize(); i++)
+	for (u32 i = 0; i < t.getDataSize(); i++)
 	{
-		t[i] = value;
+		Accessor2TensorCore::set_value(t, i, value);
 	}
 }
 
 void init_linear(Tensor& t, DataType value)
 {
-	for (u32 i = 0; i < t.getTensorDataSize(); i++)
+	for (u32 i = 0; i < t.getDataSize(); i++)
 	{
-		t[i] = value * i;
+		Accessor2TensorCore::set_value(t, i, value * i);
 	}
 }
+
+void init_normal(Tensor& t)
+{
+	std::random_device seed_gen;
+	std::mt19937 engine(seed_gen());
+	std::normal_distribution<float> dist(0.0f, 1.0);
+	for (u32 i = 0; i < t.getDataSize(); i++)
+	{
+		Accessor2TensorCore::set_value(t, i, dist(engine));
+	}
+}
+
 
 void confirm(const Tensor& tensor)
 {
 	const auto dataSize = Accessor2TensorCore::getDataSize(tensor);
 	const auto pointer = Accessor2TensorCore::getAddressOnCpuFrom(tensor);
 
-	std::vector<TensorCore::DataType> v(dataSize);
+	std::vector<DataType> v(dataSize);
 	for (u32 i = 0; i < dataSize; i++)
 	{
 		v[i] = pointer[i];
@@ -46,10 +59,27 @@ void confirm(const Tensor& tensor)
 }
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
 
+class MyLayer : public LayerCore
+{
+public:
+	MyLayer()
+	{
+		seq = Sequential(ReLU(), ReLU());
+	}
+
+	iotype forward(const iotype& input) override
+	{
+		return seq(input);
+	}
+
+	Layer seq;
+};
+
+
 
 int main()
 {
-	//テスト１
+	////テスト１
 	std::cout << "===============================" << std::endl;
 	std::cout << "Test1" << std::endl;
 	std::cout << "===============================" << std::endl;
@@ -58,18 +88,18 @@ int main()
 		std::cout << "-------------------------------" << std::endl;
 		std::cout << "Loop : " << i << std::endl;
 		std::cout << "-------------------------------" << std::endl;
-		const u32 N = 1000;
-		auto add0 = AddAsInner(); add0.mLayerName = "add0";
-		auto add1 = Add(); add1.mLayerName = "add1";
-		auto relu = ReLU(); relu.mLayerName = "relu";
+		const u32 N = 10;
+		auto add0 = AddAsInner(); 
+		auto add1 = Add(); 
+		auto relu = ReLU(); 
 		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
 
 		Tensor t0(N, 3, 28, 28); init(t0, 1); t0.to_cuda();
-		Tensor s0(false, N, 3, 28, 28); init_linear(s0, 2); s0.to_cuda();
+		Tensor s0(N, 3, 28, 28, false); init_linear(s0, 2); s0.to_cuda();
 		for (u32 i = 0; i < 2; i++)
 		{
 			auto t1 = add0(t0, s0);
-			Tensor s0(N, 3, 28, 28); init(s0, 1); confirm(t1[0]); s0.to_cuda();
+			Tensor s0(N, 3, 28, 28); init(s0, 1); s0.to_cuda();
 			auto t2 = add1(t1[0], s0);
 
 
@@ -103,6 +133,31 @@ int main()
 		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
 		auto t1 = seq(t0);
 		t1[0].backward();
+	}
+
+	//テスト4
+	std::cout << "===============================" << std::endl;
+	std::cout << "Test4" << std::endl;
+	std::cout << "===============================" << std::endl;
+	{
+		Tensor t0(10, 3, 28, 28); init(t0, 1);
+		t0.to_cuda();
+		auto mylayer = gen<MyLayer>();
+		auto t1 = mylayer(t0);
+	}
+
+
+	//テスト5
+	std::cout << "===============================" << std::endl;
+	std::cout << "Test5" << std::endl;
+	std::cout << "===============================" << std::endl;
+	{
+		Tensor t0(10, 3, 28, 28); init_normal(t0);
+		t0.to_cuda();
+		auto relu = ReLU();
+		auto t1 = relu(t0);
+		t1[0].synchronize_from_GPU_to_CPU();
+		confirm(t1[0]);
 	}
 
 	std::cout << "free check" << std::endl;
