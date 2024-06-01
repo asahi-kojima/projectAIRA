@@ -43,116 +43,15 @@ public:
 	//これは何かしら実装しないといけない。
 	TensorCore(){}
 
-	TensorCore(const TensorCore& tensorcore, bool need_grad = false)
-		: shape_already_set(tensorcore.shape_already_set)
-		, mDimension(tensorcore.mDimension)
-		, mBatchSize(tensorcore.mBatchSize)
-		, mChannel(tensorcore.mChannel)
-		, mHeight(tensorcore.mHeight)
-		, mWidth(tensorcore.mWidth)
-		, mDataSize(tensorcore.mDataSize)
+	TensorCore(const TensorCore& tensorcore, bool need_grad = false);
 
-		, _m_need_grad(need_grad)
-		, _m_on_cuda(false)
-	{
-		mallocOnCPU(_m_cpu_data_address, mDataSize);
-		if (need_grad)
-		{
-			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
-		}
-	}
+	TensorCore(u32 width, bool need_grad = false);
 
-	TensorCore(u32 width, bool need_grad = false)
+	TensorCore(u32 batchSize, u32 width, bool need_grad = false);
 
-		: shape_already_set(true)
-		, mDimension(Dimension::dim1)
-		, mBatchSize(0)
-		, mChannel(0)
-		, mHeight(0)
-		, mWidth(width)
-		, mDataSize(width)
-		, mCHW(0)
-		, mHW(0)
+	TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad = false);
 
-		, _m_need_grad(need_grad)
-		, _m_on_cuda(false)
-	{
-		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_data_address, mDataSize);
-		if (_m_need_grad)
-		{
-			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
-		}
-	}
-
-	TensorCore(u32 batchSize, u32 width, bool need_grad = false)
-
-		: shape_already_set(true)
-		, mDimension(Dimension::dim2)
-		, mBatchSize(batchSize)
-		, mChannel(0)
-		, mHeight(0)
-		, mWidth(width)
-		, mDataSize(batchSize* width)
-		, mCHW(0)
-		, mHW(0)
-
-		, _m_need_grad(need_grad)
-		, _m_on_cuda(false)
-	{
-		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_data_address, mDataSize);
-		if (_m_need_grad)
-		{
-			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
-		}
-	}
-
-	TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad = false)
-
-		: shape_already_set(true)
-		, mDimension(Dimension::dim3)
-		, mBatchSize(batchSize)
-		, mChannel(0)
-		, mHeight(height)
-		, mWidth(width)
-		, mDataSize(batchSize* height* width)
-		, mCHW(0)
-		, mHW(height* width)
-
-		, _m_need_grad(need_grad)
-		, _m_on_cuda(false)
-	{
-		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_data_address, mDataSize);
-		if (_m_need_grad)
-		{
-			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
-		}
-	}
-
-	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false)
-
-		: shape_already_set(true)
-		, mDimension(Dimension::dim4)
-		, mBatchSize(batchSize)
-		, mChannel(channel)
-		, mHeight(height)
-		, mWidth(width)
-		, mDataSize(batchSize* channel* height* width)
-		, mCHW(channel * height * width)
-		, mHW(height* width)
-
-		, _m_need_grad(need_grad)
-		, _m_on_cuda(false)
-	{
-		//データサイズが上で確定したので、それに従って確保する。
-		mallocOnCPU(_m_cpu_data_address, mDataSize);
-		if (_m_need_grad)
-		{
-			mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
-		}
-	}
+	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
 
 
 
