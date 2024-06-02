@@ -9,14 +9,8 @@ public:
 	~AffineCore() {}
 
 private:
-	virtual iotype forward(const iotype& input_tensors) override
-	{
-		std::cout << "Affine forward" << std::endl;
-
-		auto t = input_tensors;
-
-		return t;
-	}
+	virtual iotype forward(const iotype& input_tensors) override;
+	virtual void backward() override;
 };
 
 

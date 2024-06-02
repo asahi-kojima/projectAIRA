@@ -48,9 +48,6 @@
     <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
-    <ClCompile Include="TensorNetwork\Layer\Affine.cpp">
-      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
-    </ClCompile>
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
     </ClCompile>
@@ -104,6 +101,9 @@
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\Split.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\Affine.cu">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
   </ItemGroup>
