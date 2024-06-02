@@ -91,7 +91,7 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 	if (!m_init_finish)
 	{
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
-		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore0);
+		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore0, true);
 		child_tensorcore->regist_parent_layercore(shared_from_this());
 
 		if (input_tensorcore0._m_on_cuda)

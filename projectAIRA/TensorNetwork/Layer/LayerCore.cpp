@@ -8,7 +8,7 @@ LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num)
 	, mInputTensorCoreTbl(input_tensor_num)
 	, m_parameter_tbl(0)
 	, m_child_tensorcore_tbl(0)
-	, m_downstream_tensor_backward_finish(0)
+	//, m_downstream_tensor_backward_finish(0)
 {
 }
 
@@ -18,7 +18,7 @@ LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tens
 	, mInputTensorCoreTbl(input_tensor_num)
 	, m_parameter_tbl(0)
 	, m_child_tensorcore_tbl(child_tensorcore_num)
-	, m_downstream_tensor_backward_finish(child_tensorcore_num)
+	//, m_downstream_tensor_backward_finish(child_tensorcore_num)
 {
 }
 
@@ -28,7 +28,7 @@ LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tens
 	, mInputTensorCoreTbl(input_tensor_num)
 	, m_parameter_tbl(parameter_num)
 	, m_child_tensorcore_tbl(child_tensorcore_num)
-	, m_downstream_tensor_backward_finish(child_tensorcore_num)
+	//, m_downstream_tensor_backward_finish(child_tensorcore_num)
 {
 }
 
@@ -91,11 +91,16 @@ LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
 			tensorcore->connect(shared_from_this(), i);
 		}
 
-		for (auto&& is_finish : m_downstream_tensor_backward_finish)
+		//初期化が済んでいない場合、これを呼ぶとリソースエラーになる。
+		//ただし、初期化が済んでない場合には以下のforward内部でリソースが確保され、同時にbackward_finishの
+		//フラグはfalseに設定されるので、ロジック的にはここでfalseにしているのと同じになっている。
+		if (m_init_finish)
 		{
-			is_finish = false;
+			for (const auto& child_tensorcore : m_child_tensorcore_tbl)
+			{
+				child_tensorcore->backward_finish = false;
+			}
 		}
-
 
 	}
 	//各層毎の順伝搬を実際に実行する。
@@ -106,6 +111,14 @@ void LayerCore::callBackward()
 {
 	std::cout << "call backward\n";
 	//逆伝搬の処理
+	for (const auto& child_tensorcore : m_child_tensorcore_tbl)
+	{
+		if (!child_tensorcore->backward_finish)
+		{
+			return;
+		}
+	}
+
 	backward();
 
 
@@ -116,11 +129,14 @@ void LayerCore::callBackward()
 	{
 		if (std::shared_ptr<TensorCore> input_tensor_core_as_shared = input_tensor_core.lock())
 		{
+			input_tensor_core_as_shared->backward_finish = true;
+
 			//勾配情報がいらない層の更に上流層も勾配情報はいらないはずなのでスキップ
 			if (!input_tensor_core_as_shared->_m_need_grad)
 			{
 				continue;
 			}
+
 			input_tensor_core_as_shared->callBackward();
 		}
 		else
@@ -154,5 +170,5 @@ LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::io
 LayerCore::iotype operator+(const Tensor& input0, const Tensor& input1)
 {
 	Layer add = Add();
-	return add(LayerCore::iotype{input0, input1 });
+	return add(LayerCore::iotype{ input0, input1 });
 }

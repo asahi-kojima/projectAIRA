@@ -45,6 +45,7 @@ Tensor::Tensor(s32 batchSize, s32 width, bool need_grad)
 
 void Tensor::backward()
 {
+	pTensorCore->backward_finish = true;
 	pTensorCore->callBackward();
 }
 

@@ -41,7 +41,7 @@ public:
 	friend class ReLUCore;
 
 	//これは何かしら実装しないといけない。
-	TensorCore(){}
+	TensorCore() {}
 
 	TensorCore(const TensorCore& tensorcore, bool need_grad = false);
 
@@ -53,8 +53,6 @@ public:
 
 	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
 
-
-
 	virtual ~TensorCore();
 
 	//テンソルのデータをGPUに転送する。
@@ -65,11 +63,6 @@ public:
 	void callBackward() const;
 
 
-
-
-	void regist_parent_layercore(const std::shared_ptr<LayerCore>&);
-
-	void set_parent_exist(bool);
 
 	void setName(const std::string&);
 
@@ -84,6 +77,7 @@ public:
 
 
 private:
+
 	/*0000000000000000000000000000000000000000000000000000000000000000000*/
 	//形状に関する変数
 	enum class Dimension
@@ -108,7 +102,6 @@ private:
 	//CPU/GPUリソースに関する変数
 	bool _m_need_grad = false;/*勾配が必要か。末端などでは必要ない。*/
 	bool _m_on_cuda = false;/*GPUを利用するか否か*/
-	bool _m_init_gpu_resource = false;/*GPUリソースを確保したか*/
 
 	DataType* _m_cpu_data_address = nullptr;/*データのCPUアドレス*/
 	DataType* _m_gpu_data_address = nullptr;/*データのGPUアドレス*/
@@ -132,6 +125,7 @@ private:
 	s32 _m_location_in_downstream_layer = -1;
 
 
+	bool backward_finish = false;
 	/*1111111111111111111111111111111111111111111111111111111111111111111*/
 
 	void synchronize_from_GPU_to_CPU();
@@ -156,7 +150,7 @@ private:
 
 
 
-
+	void regist_parent_layercore(const std::shared_ptr<LayerCore>&);
 
 
 };

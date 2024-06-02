@@ -160,6 +160,22 @@ int main()
 		confirm(t1[0]);
 	}
 
+	//テスト6
+	std::cout << "===============================" << std::endl;
+	std::cout << "Test6" << std::endl;
+	std::cout << "===============================" << std::endl;
+	{
+		Tensor t0(10, 3, 28, 28); init_normal(t0);
+		t0.to_cuda();
+		auto split = Split();
+		auto add = Add();
+		auto t1 = split(t0);
+		auto t2 = add(t1);
+		t2[0].backward();
+		//t2[0].synchronize_from_GPU_to_CPU();
+		//confirm(t1[0]);
+	}
+
 	std::cout << "free check" << std::endl;
 }
 

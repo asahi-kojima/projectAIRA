@@ -22,6 +22,8 @@ TensorCore::TensorCore(const TensorCore& tensorcore, bool need_grad)
 
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
+
+	, backward_finish(false)
 {
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
 	if (need_grad)
@@ -44,6 +46,8 @@ TensorCore::TensorCore(u32 width, bool need_grad)
 
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
+
+	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -67,6 +71,8 @@ TensorCore::TensorCore(u32 batchSize, u32 width, bool need_grad)
 
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
+
+	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -90,6 +96,8 @@ TensorCore::TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad)
 
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
+
+	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -113,6 +121,8 @@ TensorCore::TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool n
 
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
+
+	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -175,7 +185,7 @@ void TensorCore::regist_parent_layercore(const std::shared_ptr<LayerCore>& paren
 	m_parent_exist = true;
 }
 
-void TensorCore::set_parent_exist(bool parent_exist) { m_parent_exist = parent_exist; }
+//void TensorCore::set_parent_exist(bool parent_exist) { m_parent_exist = parent_exist; }
 
 void TensorCore::setName(const std::string& name) { _m_debug_name = name; }
 

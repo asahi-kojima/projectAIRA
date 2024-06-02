@@ -39,7 +39,7 @@ protected:
 	bool m_init_finish = false;
 	bool m_on_cuda = false;
 
-	std::vector<bool> m_downstream_tensor_backward_finish;
+	//std::vector<bool> m_downstream_tensor_backward_finish;
 	/// <summary>
 	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
 	/// </summary>
