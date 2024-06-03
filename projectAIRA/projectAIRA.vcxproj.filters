@@ -45,7 +45,7 @@
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp">
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
     </ClCompile>
-    <ClCompile Include="TensorNetwork\Layer\LayerCore.cpp">
+    <ClCompile Include="TensorNetwork\Layer\Layer.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
@@ -61,9 +61,6 @@
     </ClInclude>
     <ClInclude Include="TensorNetwork\Tensor\Tensor.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Tensor</Filter>
-    </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\LayerCore.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
     <ClInclude Include="TensorNetwork\Layer\Layer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>

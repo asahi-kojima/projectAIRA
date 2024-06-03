@@ -1,5 +1,5 @@
 #include "TensorCore.h"
-#include "Layer/LayerCore.h"
+#include "Layer/Layer.h"
 
 namespace
 {

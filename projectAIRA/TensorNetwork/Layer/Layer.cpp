@@ -1,4 +1,3 @@
-#include "LayerCore.h"
 #include "Add.h"
 #include "Layer.h"
 
