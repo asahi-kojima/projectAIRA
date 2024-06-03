@@ -1,8 +1,10 @@
 #pragma once
 #include <cuda_runtime.h>
+#include <map>
 #include <device_launch_parameters.h>
 #include "Tensor/Tensor.h"
-#include <map>
+
+
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。
 //問題が起きたらここを疑う。
@@ -33,6 +35,53 @@ public:
 	virtual iotype forward(const iotype& input_tensors) = 0;
 
 
+	class Layer
+	{
+	public:
+		template <typename T, typename ... Args>
+		friend Layer gen(Args ... args);
+		template <typename T, typename ... Args>
+		friend Layer gen(const char* layerName, Args ... args);
+
+		Layer() {}
+		Layer(const Layer&);
+		Layer(const std::shared_ptr<LayerCore>&, std::string);
+
+		LayerCore::iotype operator()(const LayerCore::iotype& input) const;
+
+		template <typename ... Args>
+		LayerCore::iotype operator()(Args ... args) const
+		{
+			Tensor tensor_tbl[] = { args... };
+			const u32 input_tensor_num = (sizeof(tensor_tbl) / sizeof(tensor_tbl[0]));
+
+			LayerCore::iotype input_tensor_as_vector(input_tensor_num);
+
+			for (u32 i = 0, end = input_tensor_num; i < end; i++)
+			{
+				input_tensor_as_vector[i] = tensor_tbl[i];
+			}
+
+			return mLayerCore->callForward(input_tensor_as_vector);
+		}
+		u32 get_input_tensor_num() const
+		{
+			return mLayerCore->get_input_tensor_num();
+		}
+
+		u32 get_output_tensor_num() const
+		{
+			return mLayerCore->get_output_tensor_num();
+		}
+
+		const std::shared_ptr<LayerCore>& getLayerCore() const
+		{
+			return mLayerCore;
+		}
+	private:
+		std::shared_ptr<LayerCore> mLayerCore;
+		std::string mLayerName;
+	};
 
 protected:
 	bool unique_implimention_layer = true;
@@ -52,8 +101,8 @@ protected:
 	}
 
 	std::vector<std::shared_ptr<TensorCore> > m_parameter_tbl;
-	std::map<std::string, std::shared_ptr<TensorCore> > m_internal_layer_tbl;
-
+	std::map<std::string, Layer> m_internal_layer_tbl;
+	std::map<std::string, Layer>& mlayer;//上記のエイリアス:そのままだと長いから
 
 	/// <summary>
 	/// この層が生成したテンソル
@@ -136,7 +185,7 @@ protected:
 		return tensor.pTensorCore;
 	}
 
-	
+
 };
 
 class Accessor2TensorCore
@@ -195,3 +244,22 @@ public:
 
 LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1);
 LayerCore::iotype operator+(const Tensor& input0, const Tensor& input1);
+
+using Layer = LayerCore::Layer;
+
+template <typename T, typename ... Args>
+Layer gen(Args ... args)
+{
+	Layer layer{};
+	layer.mLayerCore = std::make_shared<T>(args...);
+	return layer;
+}
+
+template <typename T, typename ... Args>
+Layer gen(const char* layerName, Args ... args)
+{
+	Layer layer{};
+	layer.mLayerCore = std::make_shared<T>(args...);
+	layer.mLayerName = layerName;
+	return layer;
+}

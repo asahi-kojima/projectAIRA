@@ -83,7 +83,7 @@ int main()
 	std::cout << "===============================" << std::endl;
 	std::cout << "Test1" << std::endl;
 	std::cout << "===============================" << std::endl;
-	for (u32 i = 0; i < 100; i++)
+	for (u32 i = 0; i < 100000; i++)
 	{
 		std::cout << "-------------------------------" << std::endl;
 		std::cout << "Loop : " << i << std::endl;
@@ -175,6 +175,39 @@ int main()
 		//t2[0].synchronize_from_GPU_to_CPU();
 		//confirm(t1[0]);
 	}
+
+
+	////テスト7
+	std::cout << "===============================" << std::endl;
+	std::cout << "Test7" << std::endl;
+	std::cout << "===============================" << std::endl;
+	for (u32 i = 0; i < 10; i++)
+	{
+		std::cout << "-------------------------------" << std::endl;
+		std::cout << "Loop : " << i << std::endl;
+		std::cout << "-------------------------------" << std::endl;
+		const u32 N = 100;
+		auto add0 = AddAsInner();
+		auto add1 = AddAsInner();
+		auto relu = ReLU();
+		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
+
+		Tensor t0(N, 3, 28, 28); init(t0, 1); t0.to_cuda();
+		Tensor s0(N, 3, 28, 28, false); init_linear(s0, 2); s0.to_cuda();
+		for (u32 i = 0; i < 2; i++)
+		{
+			auto t1 = add0(t0, s0);
+			Tensor s0(N, 3, 28, 28); init(s0, 1); s0.to_cuda();
+			auto t2 = add1(t1[0], s0);
+
+
+
+			auto t3 = relu(t2[0]);
+			auto t4 = seq(t3);
+			t4[0].backward();
+		}
+	}
+
 
 	std::cout << "free check" << std::endl;
 }

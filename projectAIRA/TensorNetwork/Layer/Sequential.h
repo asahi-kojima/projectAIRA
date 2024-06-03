@@ -15,11 +15,11 @@ public:
 
 		for (u32 i = 0, end = inner_layer_num; i < end; i++)
 		{
-			if (layer_tbl[i].mLayerCore->get_input_tensor_num() != 1 || layer_tbl[i].mLayerCore->get_output_tensor_num() != 1)
+			if (layer_tbl[i].get_input_tensor_num() != 1 || layer_tbl[i].get_output_tensor_num() != 1)
 			{
 				std::cout << "inner module of Sequential  must be 1 input(your : "
-					<< layer_tbl[i].mLayerCore->get_input_tensor_num() << " ) and 1 output(your : "
-					<< layer_tbl[i].mLayerCore->get_output_tensor_num() << " ). " << std::endl;
+					<< layer_tbl[i].get_input_tensor_num() << " ) and 1 output(your : "
+					<< layer_tbl[i].get_output_tensor_num() << " ). " << std::endl;
 				exit(1);
 			}
 			mInnerLayer[i] = layer_tbl[i];

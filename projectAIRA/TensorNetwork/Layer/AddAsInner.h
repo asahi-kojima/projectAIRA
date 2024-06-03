@@ -7,12 +7,13 @@ class AddAsInnerCore : public LayerCore
 public:
 	AddAsInnerCore() : LayerCore(2,1)
 	{
+		mlayer["add"] = Add();
 		mAdd = Add();
 	}
 
 	virtual iotype forward(const iotype& input_tensors) override
 	{
-		return mAdd(input_tensors);
+		return mlayer["add"](input_tensors);
 	}
 
 private:
