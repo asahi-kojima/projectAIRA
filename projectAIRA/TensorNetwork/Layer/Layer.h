@@ -2,17 +2,36 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <map>
+#include "debug-setting.h"
 #include "Tensor/Tensor.h"
+
+namespace aoba
+{
+	namespace nn
+	{
+		namespace optimizer
+		{
+			class Optimizer;
+		}
+
+		namespace layer
+		{
+			class LayerCore;
+		}
+	}
+}
 
 
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。
 //問題が起きたらここを疑う。
-class LayerCore : public std::enable_shared_from_this<LayerCore>
+class aoba::nn::layer::LayerCore : public std::enable_shared_from_this<LayerCore>
 {
 public:
-	friend class TensorCore;
-	using iotype = std::vector<Tensor>;
+
+	friend class aoba::nn::tensor::TensorCore;
+	friend class aoba::nn::optimizer::Optimizer;
+	using iotype = std::vector<tensor::Tensor>;
 
 	LayerCore(u32 = 1, u32 = 1);
 	LayerCore(u32, u32, u32);
@@ -26,13 +45,6 @@ public:
 	u32 get_input_tensor_num() const { return m_input_tensor_num; }
 	u32 get_output_tensor_num() const { return m_output_tensor_num; }
 
-
-	/// <summary>
-	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
-	/// </summary>
-	/// <param name="input_tensors"></param>
-	/// <returns></returns>
-	virtual iotype forward(const iotype& input_tensors) = 0;
 
 
 	class Layer
@@ -84,21 +96,15 @@ public:
 	};
 
 protected:
+	using TensorCore = aoba::nn::tensor::TensorCore;
+	using Tensor = aoba::nn::tensor::Tensor;
+
+
 	bool unique_implimention_layer = true;
 	bool m_init_finish = false;
 	bool m_on_cuda = false;
 
-	//std::vector<bool> m_downstream_tensor_backward_finish;
-	/// <summary>
-	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
-	/// </summary>
-	/// <param name="input_tensors"></param>
-	/// <returns></returns>
-	virtual void backward()
-	{
-		unique_implimention_layer = false;
-		std::cout << "no implement" << std::endl;
-	}
+
 
 	std::vector<std::shared_ptr<TensorCore> > m_parameter_tbl;
 	std::map<std::string, Layer> m_internal_layer_tbl;
@@ -122,6 +128,15 @@ protected:
 	const u32 m_output_tensor_num;
 
 
+
+
+
+	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor)
+	{
+		return tensor.pTensorCore;
+	}
+
+private:
 	void common_check_before_forward(const iotype& input_tensors)
 	{
 		//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。
@@ -173,24 +188,47 @@ protected:
 			tensorcore->connect(shared_from_this(), i);
 		}
 	}
-
 	void disconnect_bidirection(s32 location)
 	{
 		mInputTensorCoreTbl[location].reset();
 	}
 
+	/// <summary>
+	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
+	/// </summary>
+	/// <param name="input_tensors"></param>
+	/// <returns></returns>
+	virtual iotype forward(const iotype& input_tensors) = 0;
 
-	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor)
+	/// <summary>
+	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
+	/// </summary>
+	/// <param name="input_tensors"></param>
+	/// <returns></returns>
+	virtual void backward()
 	{
-		return tensor.pTensorCore;
+		unique_implimention_layer = false;
 	}
 
 
+	struct inputDatainfo
+	{
+		u32 dim;
+		u32 batch_size;
+		u32 channel;
+		u32 height;
+		u32 width;
+	};
 };
+
+
 
 class Accessor2TensorCore
 {
 public:
+	using TensorCore = aoba::nn::tensor::TensorCore;
+	using Tensor = aoba::nn::tensor::Tensor;
+
 	inline static DataType* getAddressOnCpuFrom(Tensor tensor)
 	{
 		return tensor.pTensorCore->_m_cpu_data_address;
@@ -242,24 +280,41 @@ public:
 };
 
 
-LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1);
-LayerCore::iotype operator+(const Tensor& input0, const Tensor& input1);
+aoba::nn::layer::LayerCore::iotype operator+(const aoba::nn::layer::LayerCore::iotype& input0, const aoba::nn::layer::LayerCore::iotype& input1);
+aoba::nn::layer::LayerCore::iotype operator+(const aoba::nn::tensor::Tensor& input0, const aoba::nn::tensor::Tensor& input1);
 
-using Layer = LayerCore::Layer;
+using Layer = aoba::nn::layer::LayerCore::Layer;
+using Module = aoba::nn::layer::LayerCore;
+
+namespace aoba
+{
+	namespace nn
+	{
+		namespace layer
+		{
+			template <typename T, typename ... Args>
+			LayerCore::Layer gen(Args ... args);
+
+			template <typename T, typename ... Args>
+			LayerCore::Layer gen(const char* layerName, Args ... args);
+		}
+	}
+}
 
 template <typename T, typename ... Args>
-Layer gen(Args ... args)
+Layer aoba::nn::layer::gen(Args ... args)
 {
-	Layer layer{};
+	LayerCore::Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
 	return layer;
 }
 
 template <typename T, typename ... Args>
-Layer gen(const char* layerName, Args ... args)
+Layer aoba::nn::layer::gen(const char* layerName, Args ... args)
 {
-	Layer layer{};
+	LayerCore::Layer layer{};
 	layer.mLayerCore = std::make_shared<T>(args...);
 	layer.mLayerName = layerName;
 	return layer;
 }
+

@@ -1,8 +1,10 @@
 #pragma once
 #include "Layer.h"
 
+namespace aoba { namespace nn { namespace layer { class SequentialCore; } } }
 
-class SequentialCore : public LayerCore
+
+class aoba::nn::layer::SequentialCore : public LayerCore
 {
 public:
 	template <typename ... Args>
@@ -45,7 +47,8 @@ private:
 };
 
 template<typename ... Args>
-Layer Sequential(Args ... args)
+inline Layer Sequential(Args ... args)
 {
-	return gen<SequentialCore>("Sequential", args...);
+	return aoba::nn::layer::gen<aoba::nn::layer::SequentialCore>("Sequential", args...);
 }
+

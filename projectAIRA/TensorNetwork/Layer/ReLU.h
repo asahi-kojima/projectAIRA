@@ -1,7 +1,10 @@
 #pragma once
 #include "Layer.h"
 
-class ReLUCore : public LayerCore
+namespace aoba { namespace nn { namespace layer { class ReLUCore; } } }
+
+
+class aoba::nn::layer::ReLUCore : public LayerCore
 {
 public:
 	ReLUCore();
@@ -13,4 +16,5 @@ private:
 };
 
 
-Layer ReLU(); 
+Layer ReLU();
+

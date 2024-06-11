@@ -37,6 +37,15 @@
     <Filter Include="ソース ファイル\TensorNetwork\Layer">
       <UniqueIdentifier>{55a24ed0-81d1-44ab-8df5-016e51d1f0a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\TensorNetwork\Layer\Loss">
+      <UniqueIdentifier>{bd8621f4-efd0-46f3-b357-77613f36a7df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TensorNetwork\Layer\Loss">
+      <UniqueIdentifier>{9be90267-5d24-4dac-ace9-22ade1eddf93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\TensorNetwork\Optimizer">
+      <UniqueIdentifier>{fc1d8f58-9e93-4489-9ce3-55768d03231e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp">
@@ -89,6 +98,24 @@
     <ClInclude Include="TensorNetwork\Layer\ReLU.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
+    <ClInclude Include="common\gpu-manager.h">
+      <Filter>ヘッダー ファイル\common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\debug-setting.h">
+      <Filter>ヘッダー ファイル\common</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\L2Loss.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Loss</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer\Loss</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Optimizer\Optimizer.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Optimizer\SGD.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
@@ -102,6 +129,18 @@
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\Affine.cu">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\L2Loss.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer\Loss</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\CrossEntropyWithSM.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer\Loss</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Optimizer\Optimizer.cu">
+      <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu">
+      <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

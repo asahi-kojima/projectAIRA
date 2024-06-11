@@ -2,10 +2,23 @@
 #include <tuple>
 #include <cassert>
 #include <random>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <ostream>
 #include "Layer/Add.h"
 #include "Layer/AddAsInner.h"
 #include "Layer/ReLU.h"
 #include "Layer/Sequential.h"
+#include "Layer/CrossEntropyWithSM.h"
+#include "gpu-manager.h"
+#include "Optimizer/SGD.h"
+
+using namespace aoba::nn;
+using namespace layer;
+using namespace optimizer;
+using namespace tensor;
+
 std::tuple<Tensor, Tensor> convert(const LayerCore::iotype& tensor_vec)
 {
 	if (tensor_vec.size() != 2)
@@ -15,6 +28,68 @@ std::tuple<Tensor, Tensor> convert(const LayerCore::iotype& tensor_vec)
 
 	return std::tuple<Tensor, Tensor>(tensor_vec[0], tensor_vec[1]);
 }
+
+//0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+void loadMnistFromBin(std::string filePath, std::vector<f32>& data, u32 loadByteSize)
+{
+	std::cout << "load start [" << filePath << "]";
+
+	std::ifstream fin(filePath, std::ios::in | std::ios::binary);
+	if (!fin)
+	{
+		std::cout << "\nthis program can't open the file : " << filePath << "\n" << std::endl;
+		return;
+	}
+	fin.read(reinterpret_cast<char*>(data.data()), loadByteSize);
+
+	std::cout << "-----> load finish" << std::endl;
+}
+
+void mnistNormalizer(std::vector<f32>& v, u32 size)
+{
+	for (u32 i = 0; i < size; i++)
+	{
+		const u32 offset = i * 784;
+
+		f32 mu = 0;
+		for (u32 j = 0; j < 784; j++)
+		{
+			mu += v[offset + j] / 784.0f;
+		}
+
+		f32 sigma2 = 0.0f;
+		for (u32 j = 0; j < 784; j++)
+		{
+			sigma2 += (v[offset + j] - mu) * (v[offset + j] - mu) / 784.0f;
+		}
+
+		f32 sigma = std::sqrtf(sigma2);
+		for (u32 j = 0; j < 784; j++)
+		{
+			v[offset + j] = (v[offset + j] - mu) / sigma;
+		}
+	}
+}
+
+void setupMnistData(std::vector<f32>& trainingData, std::vector<f32>& trainingLabel, std::vector<f32>& testData, std::vector<f32>& testLabel)
+{
+	constexpr u32 dataSize = 784;
+	constexpr u32 trainingDataNum = 60000;
+	constexpr u32 testDataNum = 10000;
+	trainingData.resize(trainingDataNum * dataSize);
+	trainingLabel.resize(trainingDataNum);
+	testData.resize(testDataNum * dataSize);
+	testLabel.resize(testDataNum);
+
+	loadMnistFromBin("C:\\Users\\asahi\\Downloads\\mnist_data_train.bin", trainingData, sizeof(f32) * trainingData.size());
+	loadMnistFromBin("C:\\Users\\asahi\\Downloads\\mnist_label_train.bin", trainingLabel, sizeof(f32) * trainingLabel.size());
+	loadMnistFromBin("C:\\Users\\asahi\\Downloads\\mnist_data_test.bin", testData, sizeof(f32) * testData.size());
+	loadMnistFromBin("C:\\Users\\asahi\\Downloads\\mnist_label_test.bin", testLabel, sizeof(f32) * testLabel.size());
+
+	mnistNormalizer(trainingData, trainingDataNum);
+	mnistNormalizer(testData, testDataNum);
+}
+//1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
 
 //000000000000000000000000000000000000000000000000000000000000000000000000000000
 //開発用
@@ -79,136 +154,211 @@ public:
 
 int main()
 {
-	////テスト１
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test1" << std::endl;
-	std::cout << "===============================" << std::endl;
-	for (u32 i = 0; i < 100000; i++)
+	bool gpu_is_available = gpu_manager::gpu_is_available();
+
+	constexpr u32 dataSize = 784;
+	constexpr u32 trainingDataNum = 60000;
+	constexpr u32 testDataNum = 10000;
+	std::vector<f32> trainingData, trainingLabel, testData, testLabel;
+	setupMnistData(trainingData, trainingLabel, testData, testLabel);
+
+
+	constexpr u32 batch_size = 100;
+	constexpr u32 batched_data_num = trainingDataNum / batch_size;
+	std::vector<Tensor> input_tensor_tbl(batched_data_num);
+	for (auto& v : input_tensor_tbl)
 	{
-		std::cout << "-------------------------------" << std::endl;
-		std::cout << "Loop : " << i << std::endl;
-		std::cout << "-------------------------------" << std::endl;
-		const u32 N = 10;
-		auto add0 = AddAsInner(); 
-		auto add1 = Add(); 
-		auto relu = ReLU(); 
-		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
+		v = Tensor(batch_size, dataSize);
+	}
+	std::vector<Tensor> correct_tensor_tbl(batched_data_num);
+	for (auto& v : correct_tensor_tbl)
+	{
+		v = Tensor(batch_size, 1);
+	}
 
-		Tensor t0(N, 3, 28, 28); init(t0, 1); t0.to_cuda();
-		Tensor s0(N, 3, 28, 28, false); init_linear(s0, 2); s0.to_cuda();
-		for (u32 i = 0; i < 2; i++)
+	for (u32 Bn = 0; Bn < batched_data_num; Bn++)
+	{
+		auto& tensor = input_tensor_tbl[Bn];
+		for (u32 N = 0; N < batch_size; N++)
 		{
-			auto t1 = add0(t0, s0);
-			Tensor s0(N, 3, 28, 28); init(s0, 1); s0.to_cuda();
-			auto t2 = add1(t1[0], s0);
-
-
-
-			auto t3 = relu(t2[0]);
-			auto t4 = seq(t3);
-			t4[0].backward();
+			for (u32 i = 0; i < dataSize; i++)
+			{
+				const u32 batched_index = Bn * (dataSize * batch_size) + (N * dataSize + i);
+				const u32 index = N * dataSize + i;
+				Accessor2TensorCore::set_value(tensor, index, trainingData[batched_index]);
+			}
 		}
 	}
 
-
-	//テスト２
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test2" << std::endl;
-	std::cout << "===============================" << std::endl;
+	for (u32 Bn = 0; Bn < batched_data_num; Bn++)
 	{
-		Tensor t0(10, 3, 28, 28); init(t0, 1); t0.to_cuda();
-		Tensor t1(10, 3, 28, 28); init(t1, 2); t1.to_cuda();
-		auto t2 = t0 + t1;
-		t2[0].backward();
-	}
-
-
-	//テスト３
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test3" << std::endl;
-	std::cout << "===============================" << std::endl;
-	{
-		Tensor t0(10, 3, 28, 28); init(t0, 1);
-		t0.to_cuda();
-		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
-		auto t1 = seq(t0);
-		t1[0].backward();
-	}
-
-	//テスト4
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test4" << std::endl;
-	std::cout << "===============================" << std::endl;
-	{
-		Tensor t0(10, 3, 28, 28); init(t0, 1);
-		t0.to_cuda();
-		auto mylayer = gen<MyLayer>();
-		auto t1 = mylayer(t0);
-	}
-
-
-	//テスト5
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test5" << std::endl;
-	std::cout << "===============================" << std::endl;
-	{
-		Tensor t0(10, 3, 28, 28); init_normal(t0);
-		t0.to_cuda();
-		auto relu = ReLU();
-		auto t1 = relu(t0);
-		t1[0].synchronize_from_GPU_to_CPU();
-		confirm(t1[0]);
-	}
-
-	//テスト6
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test6" << std::endl;
-	std::cout << "===============================" << std::endl;
-	{
-		Tensor t0(10, 3, 28, 28); init_normal(t0);
-		t0.to_cuda();
-		auto split = Split();
-		auto add = Add();
-		auto t1 = split(t0);
-		auto t2 = add(t1);
-		t2[0].backward();
-		//t2[0].synchronize_from_GPU_to_CPU();
-		//confirm(t1[0]);
-	}
-
-
-	////テスト7
-	std::cout << "===============================" << std::endl;
-	std::cout << "Test7" << std::endl;
-	std::cout << "===============================" << std::endl;
-	for (u32 i = 0; i < 10; i++)
-	{
-		std::cout << "-------------------------------" << std::endl;
-		std::cout << "Loop : " << i << std::endl;
-		std::cout << "-------------------------------" << std::endl;
-		const u32 N = 100;
-		auto add0 = AddAsInner();
-		auto add1 = AddAsInner();
-		auto relu = ReLU();
-		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
-
-		Tensor t0(N, 3, 28, 28); init(t0, 1); t0.to_cuda();
-		Tensor s0(N, 3, 28, 28, false); init_linear(s0, 2); s0.to_cuda();
-		for (u32 i = 0; i < 2; i++)
+		auto& tensor = correct_tensor_tbl[Bn];
+		for (u32 N = 0; N < batch_size; N++)
 		{
-			auto t1 = add0(t0, s0);
-			Tensor s0(N, 3, 28, 28); init(s0, 1); s0.to_cuda();
-			auto t2 = add1(t1[0], s0);
-
-
-
-			auto t3 = relu(t2[0]);
-			auto t4 = seq(t3);
-			t4[0].backward();
+			const u32 batched_index = Bn *  batch_size + N;
+			Accessor2TensorCore::set_value(tensor, N, trainingLabel[batched_index]);
 		}
 	}
+	
+	int sss = 1 + 1;
+	//////テスト１
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test1" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	for (u32 i = 0; i < 100; i++)
+	//	{
+	//		std::cout << "-------------------------------" << std::endl;
+	//		std::cout << "Loop : " << i << std::endl;
+	//		std::cout << "-------------------------------" << std::endl;
+	//		const u32 N = 10;
+	//		auto add0 = AddAsInner();
+	//		auto add1 = Add();
+	//		auto relu = ReLU();
+	//		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
+
+	//		Tensor t0(N, 3, 28, 28); init(t0, 1); t0.to_cuda(gpu_is_available);
+	//		Tensor s0(N, 3, 28, 28, false); init_linear(s0, 2); s0.to_cuda(gpu_is_available);
+	//		for (u32 i = 0; i < 2; i++)
+	//		{
+	//			auto t1 = add0(t0, s0);
+	//			Tensor s0(N, 3, 28, 28); init(s0, 1); s0.to_cuda(gpu_is_available);
+	//			auto t2 = add1(t1[0], s0);
 
 
+
+	//			auto t3 = relu(t2[0]);
+	//			auto t4 = seq(t3);
+	//			t4[0].backward();
+	//		}
+	//	}
+	//}
+
+	////テスト２
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test2" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	{
+	//		Tensor t0(10, 3, 28, 28); init(t0, 1); t0.to_cuda(gpu_is_available);
+	//		Tensor t1(10, 3, 28, 28); init(t1, 2); t1.to_cuda(gpu_is_available);
+	//		auto t2 = t0 + t1;
+	//		t2[0].backward();
+	//	}
+	//}
+
+
+	////テスト３
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test3" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	{
+	//		Tensor t0(10, 3, 28, 28); init(t0, 1);
+	//		t0.to_cuda(gpu_is_available);
+	//		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
+	//		auto t1 = seq(t0);
+	//		t1[0].backward();
+	//	}
+	//}
+
+	////テスト4
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test4" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	{
+	//		Tensor t0(10, 3, 28, 28); init(t0, 1);
+	//		t0.to_cuda(gpu_is_available);
+	//		auto mylayer = gen<MyLayer>();
+	//		auto t1 = mylayer(t0);
+	//	}
+	//}
+
+
+	////テスト5
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test5" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	{
+	//		Tensor t0(10, 3, 28, 28); init_normal(t0);
+	//		t0.to_cuda(gpu_is_available);
+	//		auto relu = ReLU();
+	//		auto t1 = relu(t0);
+	//		t1[0].synchronize_from_GPU_to_CPU();
+	//		confirm(t1[0]);
+	//	}
+	//}
+
+	////テスト6
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test6" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	{
+	//		Tensor t0(10, 3, 28, 28); init_normal(t0);
+	//		t0.to_cuda(gpu_is_available);
+	//		auto split = Split();
+	//		auto add = Add();
+	//		auto t1 = split(t0);
+	//		auto t2 = add(t1);
+	//		t2[0].backward();
+	//		//t2[0].synchronize_from_GPU_to_CPU();
+	//		//confirm(t1[0]);
+	//	}
+	//}
+
+	//////テスト7
+	//{
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test7" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	for (u32 i = 0; i < 100; i++)
+	//	{
+	//		std::cout << "-------------------------------" << std::endl;
+	//		std::cout << "Loop : " << i << std::endl;
+	//		std::cout << "-------------------------------" << std::endl;
+	//		const u32 N = 1;
+	//		auto add0 = AddAsInner();
+	//		auto add1 = AddAsInner();
+	//		auto relu = ReLU();
+	//		auto seq = Sequential(ReLU(), ReLU(), ReLU(), ReLU());
+
+	//		Tensor t0(N, 1); init(t0, 1);// t0.to_cuda(gpu_is_available);
+	//		Tensor t1(N, 1); init(t1, 1);// t1.to_cuda(gpu_is_available);
+	//		auto t = t0 + t1;
+	//		t[0].backward();
+	//	}
+	//}
+
+	////テスト8
+	{
+		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		auto lossFunc = CrossEntropyWithSM();
+		std::cout << "===============================" << std::endl;
+		std::cout << "Test8" << std::endl;
+		std::cout << "===============================" << std::endl;
+
+		for (u32 i = 0; i < 1000; i++)
+		{
+			std::cout << "-------------------------------" << std::endl;
+			std::cout << "Loop : " << i << std::endl;
+			std::cout << "-------------------------------" << std::endl;
+			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
+			{
+				Tensor& training_tensor = input_tensor_tbl[Bn];
+				Tensor& correct_tensor = correct_tensor_tbl[Bn];
+				auto t = seq(training_tensor);
+				auto loss = lossFunc(t[0], correct_tensor);
+				std::cout << Tensor::getLoss(loss[0]) << std::endl;
+				loss[0].backward();
+			}
+		}
+
+		auto optim = aoba::nn::optimizer::SGD(0.01f);
+		optim.optimize();
+	}
 	std::cout << "free check" << std::endl;
 }
 

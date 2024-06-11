@@ -24,21 +24,47 @@
 #else
 #define CUDA_SYNCHRONIZE_DEBUG {}
 #endif
-
-class LayerCore;
+//
+//class aoba::nn::layer::LayerCore;
+namespace aoba
+{
+	namespace nn
+	{
+		namespace layer
+		{
+			class LayerCore;
+			class CrossEntropyWithSMCore;
+			class AddCore;
+			class SplitCore;
+			class ReLUCore;
+			class AffineCore;
+			class L2LossCore;
+		}
+	}
+}
 class Accessor2TensorCore;
-class Tensor;
+//class Tensor;
 
-class TensorCore
+namespace aoba { namespace nn { namespace tensor { class TensorCore; } } }
+
+class aoba::nn::tensor::TensorCore
 {
 public:
 	friend class Tensor;
-	friend class LayerCore;
+	friend class layer::LayerCore;
 	friend class Accessor2TensorCore;
 
-	friend class AddCore;
-	friend class SplitCore;
-	friend class ReLUCore;
+	//primitiveなクラスは特権的にフレンドにしている。
+	friend class layer::AddCore;
+	friend class layer::SplitCore;
+	friend class layer::ReLUCore;
+	friend class layer::AffineCore;
+
+	//LossFunction
+	friend class layer::L2LossCore;
+	friend class layer::CrossEntropyWithSMCore;
+
+
 
 	//これは何かしら実装しないといけない。
 	TensorCore() {}
@@ -52,6 +78,8 @@ public:
 	TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad = false);
 
 	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
+
+	//TensorCore(Dimension, u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
 
 	virtual ~TensorCore();
 
@@ -67,21 +95,30 @@ public:
 	void setName(const std::string&);
 
 
-	DataType operator()(u32, u32, u32, u32) const;
+	DataType  operator()(u32, u32, u32, u32) const;
 	DataType& operator()(u32, u32, u32, u32);
-	DataType operator()(u32, u32, u32) const;
+	DataType  operator()(u32, u32, u32) const;
 	DataType& operator()(u32, u32, u32);
-	DataType operator()(u32, u32) const;
+	DataType  operator()(u32, u32) const;
 	DataType& operator()(u32, u32);
+	DataType  operator()(u32) const;
+	DataType& operator()(u32);
 
-
+	DataType  d(u32, u32, u32, u32) const;
+	DataType& d(u32, u32, u32, u32);
+	DataType  d(u32, u32, u32) const;
+	DataType& d(u32, u32, u32);
+	DataType  d(u32, u32) const;
+	DataType& d(u32, u32);
+	DataType  d(u32) const;
+	DataType& d(u32);
 
 private:
-
 	/*0000000000000000000000000000000000000000000000000000000000000000000*/
-	//形状に関する変数
+		//形状に関する変数
 	enum class Dimension
 	{
+		dim0,
 		dim1,
 		dim2,
 		dim3,
@@ -115,13 +152,13 @@ private:
 
 	//親を把握しておく
 	//backwardの処理で必要。
-	std::weak_ptr<LayerCore> _m_upstream_layer;
+	std::weak_ptr<layer::LayerCore> _m_upstream_layer;
 	//s32 _m_location_in_upstream_layer = -1;
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
 	// 結合されたかを登録しておく。
-	std::shared_ptr<LayerCore> _m_downstream_layer;
+	std::shared_ptr<layer::LayerCore> _m_downstream_layer;
 	s32 _m_location_in_downstream_layer = -1;
 
 
@@ -131,7 +168,7 @@ private:
 	void synchronize_from_GPU_to_CPU();
 
 	void disconnect_bidirection();
-	void connect(const std::shared_ptr<LayerCore>&, u32);
+	void connect(const std::shared_ptr<layer::LayerCore>&, u32);
 	//識別用の名前：デバッグで使うことを想定
 	std::string _m_debug_name;
 
@@ -150,7 +187,8 @@ private:
 
 
 
-	void regist_parent_layercore(const std::shared_ptr<LayerCore>&);
-
-
+	void regist_parent_layercore(const std::shared_ptr<layer::LayerCore>&);
+public:
+	static void memcpyFromVector(Tensor&, const std::vector<DataType>&);
 };
+

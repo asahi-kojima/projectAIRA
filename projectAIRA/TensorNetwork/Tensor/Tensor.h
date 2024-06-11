@@ -5,10 +5,13 @@
 /// <summary>
 /// ユーザーにとってテンソルを扱うためのインターフェース
 /// </summary>
-class Tensor
+class Accessor2TensorCore;
+namespace aoba { namespace nn { namespace tensor { class Tensor; } } }
+class aoba::nn::tensor::Tensor
 {
 public:
-	friend class LayerCore;
+	friend class aoba::nn::layer::LayerCore;
+	friend class TensorCore;
 	friend class Accessor2TensorCore;
 
 	Tensor();
@@ -25,7 +28,7 @@ public:
 
 	void setName(const std::string& name);//debug
 
-	void to_cuda();
+	void to_cuda(bool);
 
 	void synchronize_from_GPU_to_CPU();
 
@@ -37,6 +40,7 @@ public:
 	DataType& operator()(u32, u32);
 
 
+	static DataType getLoss(const Tensor&);
 
 private:
 	std::shared_ptr<TensorCore> pTensorCore;

@@ -1,8 +1,9 @@
 #pragma once
 #include "Layer.h"
 
+namespace aoba { namespace nn { namespace layer { class SplitCore; } } }
 
-class SplitCore : public LayerCore
+class aoba::nn::layer::SplitCore : public LayerCore
 {
 public:
 	SplitCore();

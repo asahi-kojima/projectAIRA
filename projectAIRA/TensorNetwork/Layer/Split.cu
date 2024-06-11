@@ -45,9 +45,13 @@ namespace
 	}
 }
 
+using SplitCore = aoba::nn::layer::SplitCore;
+using LayerCore = aoba::nn::layer::LayerCore;
+
+
 Layer Split()
 {
-	Layer add_layer = gen<SplitCore>("Add");
+	Layer add_layer = aoba::nn::layer::gen<SplitCore>("Add");
 	return add_layer;
 }
 
@@ -128,30 +132,30 @@ void SplitCore::backward()
 	std::cout << "Add backward" << std::endl;
 	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
-			bool need_grad = input_tensor_core->_m_need_grad;
+		bool need_grad = input_tensor_core->_m_need_grad;
 
-			if (need_grad)
+		if (need_grad)
+		{
+			auto dataSize = input_tensor_core->mDataSize;
+			if (m_on_cuda)
 			{
-				auto dataSize = input_tensor_core->mDataSize;
-				if (m_on_cuda)
-				{
-					auto output0_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-					auto output1_address = m_child_tensorcore_tbl[1]->_m_gpu_grad_data_address;
-					auto input_address = input_tensor_core->_m_gpu_grad_data_address;
+				auto output0_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
+				auto output1_address = m_child_tensorcore_tbl[1]->_m_gpu_grad_data_address;
+				auto input_address = input_tensor_core->_m_gpu_grad_data_address;
 
-					dim3 block(256);
-					dim3 grid((dataSize + block.x - 1) / block.x);
-					split_backward_impl_gpu << <grid, block >> > (output0_address, output1_address, input_address, dataSize);
-					CUDA_SYNCHRONIZE_DEBUG;
-				}
-				else
-				{
-					auto output0_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
-					auto output1_address = m_child_tensorcore_tbl[1]->_m_cpu_grad_data_address;
-					auto input_address = input_tensor_core->_m_cpu_grad_data_address;
-					split_backward_impl_cpu(output0_address, output1_address, input_address, dataSize);
-				}
+				dim3 block(256);
+				dim3 grid((dataSize + block.x - 1) / block.x);
+				split_backward_impl_gpu << <grid, block >> > (output0_address, output1_address, input_address, dataSize);
+				CUDA_SYNCHRONIZE_DEBUG;
 			}
+			else
+			{
+				auto output0_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
+				auto output1_address = m_child_tensorcore_tbl[1]->_m_cpu_grad_data_address;
+				auto input_address = input_tensor_core->_m_cpu_grad_data_address;
+				split_backward_impl_cpu(output0_address, output1_address, input_address, dataSize);
+			}
+		}
 	}
 	else
 	{
@@ -159,3 +163,4 @@ void SplitCore::backward()
 		exit(1);
 	}
 }
+

@@ -2,10 +2,13 @@
 #include "Layer.h"
 #include "Add.h"
 
-class AddAsInnerCore : public LayerCore
+namespace aoba { namespace nn { namespace layer { class AddAsInnerCore; } } }
+
+
+class aoba::nn::layer::AddAsInnerCore : public LayerCore
 {
 public:
-	AddAsInnerCore() : LayerCore(2,1)
+	AddAsInnerCore() : LayerCore(2, 1)
 	{
 		mlayer["add"] = Add();
 		mAdd = Add();
@@ -24,5 +27,6 @@ private:
 
 inline Layer AddAsInner()
 {
-	return gen<AddAsInnerCore>("AddAsInner");
+	return aoba::nn::layer::gen<aoba::nn::layer::AddAsInnerCore>("AddAsInner");
 }
+

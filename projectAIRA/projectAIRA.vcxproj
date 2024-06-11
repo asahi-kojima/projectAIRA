@@ -138,15 +138,21 @@
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="common\debug-setting.h" />
+    <ClInclude Include="common\gpu-manager.h" />
     <ClInclude Include="common\typeinfo.h" />
     <ClInclude Include="TensorNetwork\Layer\Add.h" />
     <ClInclude Include="TensorNetwork\Layer\AddAsInner.h" />
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
+    <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
+    <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
     <ClInclude Include="TensorNetwork\Layer\ReLU.h" />
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />
+    <ClInclude Include="TensorNetwork\Optimizer\Optimizer.h" />
+    <ClInclude Include="TensorNetwork\Optimizer\SGD.h" />
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h" />
     <ClInclude Include="TensorNetwork\Tensor\Tensor.h" />
     <ClInclude Include="TensorNetwork\Tensor\TensorCore.h" />
@@ -156,8 +162,12 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\Affine.cu" />
+    <CudaCompile Include="TensorNetwork\Layer\CrossEntropyWithSM.cu" />
+    <CudaCompile Include="TensorNetwork\Layer\L2Loss.cu" />
     <CudaCompile Include="TensorNetwork\Layer\ReLU.cu" />
     <CudaCompile Include="TensorNetwork\Layer\Split.cu" />
+    <CudaCompile Include="TensorNetwork\Optimizer\Optimizer.cu" />
+    <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

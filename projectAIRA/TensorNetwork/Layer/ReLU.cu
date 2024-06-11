@@ -58,9 +58,12 @@ namespace
 	}
 }
 
+using ReLUCore = aoba::nn::layer::ReLUCore;
+using LayerCore = aoba::nn::layer::LayerCore;
+
 Layer ReLU()
 {
-	Layer relu = gen<ReLUCore>("Add");
+	Layer relu = aoba::nn::layer::gen<ReLUCore>("Add");
 	return relu;
 }
 
@@ -110,7 +113,7 @@ LayerCore::iotype ReLUCore::forward(const LayerCore::iotype& input_tensors)
 
 
 
-	std::cout << "ReLU forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
+	//std::cout << "ReLU forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
 	if (m_on_cuda)
 	{
 		auto output_address = child_tensorcore._m_gpu_data_address;
@@ -136,7 +139,7 @@ LayerCore::iotype ReLUCore::forward(const LayerCore::iotype& input_tensors)
 
 void ReLUCore::backward()
 {
-	std::cout << "ReLU backward" << std::endl;
+	//std::cout << "ReLU backward" << std::endl;
 	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
 		if (input_tensor_core->_m_need_grad)
@@ -161,7 +164,7 @@ void ReLUCore::backward()
 			{
 				auto output_grad_address = output_tensorcore._m_cpu_grad_data_address;
 				auto input_grad_address = input_tensorcore._m_cpu_grad_data_address;
-				auto mask_address = mask._m_cpu_grad_data_address;
+				auto mask_address = mask._m_cpu_data_address;
 				relu_backward_impl_cpu(output_grad_address, input_grad_address, mask_address, dataSize);
 
 			}
@@ -173,3 +176,4 @@ void ReLUCore::backward()
 		exit(1);
 	}
 }
+

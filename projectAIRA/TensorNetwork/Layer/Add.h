@@ -1,8 +1,9 @@
 #pragma once
 #include "Layer.h"
 
+namespace aoba { namespace nn { namespace layer { class AddCore; } } }
 
-class AddCore : public LayerCore
+class aoba::nn::layer::AddCore : public LayerCore
 {
 public:
 	AddCore();

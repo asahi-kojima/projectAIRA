@@ -1,195 +1,198 @@
 #include "Add.h"
 #include "Layer.h"
-
-LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num)
-	: m_input_tensor_num(input_tensor_num)
-	, m_output_tensor_num(output_tensor_num)
-	, mInputTensorCoreTbl(input_tensor_num)
-	, m_parameter_tbl(0)
-	, m_child_tensorcore_tbl(0)
-	, mlayer(m_internal_layer_tbl)
-	//, m_downstream_tensor_backward_finish(0)
+namespace aoba::nn::layer
 {
-}
-
-LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num)
-	: m_input_tensor_num(input_tensor_num)
-	, m_output_tensor_num(output_tensor_num)
-	, mInputTensorCoreTbl(input_tensor_num)
-	, m_parameter_tbl(0)
-	, m_child_tensorcore_tbl(child_tensorcore_num), mlayer(m_internal_layer_tbl)
-	//, m_downstream_tensor_backward_finish(child_tensorcore_num)
-{
-}
-
-LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num, u32 parameter_num)
-	: m_input_tensor_num(input_tensor_num)
-	, m_output_tensor_num(output_tensor_num)
-	, mInputTensorCoreTbl(input_tensor_num)
-	, m_parameter_tbl(parameter_num)
-	, m_child_tensorcore_tbl(child_tensorcore_num), mlayer(m_internal_layer_tbl)
-	//, m_downstream_tensor_backward_finish(child_tensorcore_num)
-{
-}
-
-
-LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
-{
-	//共通作業をここで行う。
-
-	//他のレイヤーの組み合わせではない層に対しては、ここの処理を行う。
-	//他のレイヤーに入力を任せるような層でここを行うのは重複処理になるので、
-	//判定を入れる。
-	if (unique_implimention_layer)
+	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num)
+		: m_input_tensor_num(input_tensor_num)
+		, m_output_tensor_num(output_tensor_num)
+		, mInputTensorCoreTbl(input_tensor_num)
+		, m_parameter_tbl(0)
+		, m_child_tensorcore_tbl(0)
+		, mlayer(m_internal_layer_tbl)
+		//, m_downstream_tensor_backward_finish(0)
 	{
-		//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。
-		if (input_tensors.size() != m_input_tensor_num)
+	}
+
+	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num)
+		: m_input_tensor_num(input_tensor_num)
+		, m_output_tensor_num(output_tensor_num)
+		, mInputTensorCoreTbl(input_tensor_num)
+		, m_parameter_tbl(0)
+		, m_child_tensorcore_tbl(child_tensorcore_num)
+		, mlayer(m_internal_layer_tbl)
+	{
+	}
+
+	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num, u32 parameter_num)
+		: m_input_tensor_num(input_tensor_num)
+		, m_output_tensor_num(output_tensor_num)
+		, mInputTensorCoreTbl(input_tensor_num)
+		, m_parameter_tbl(parameter_num)
+		, m_child_tensorcore_tbl(child_tensorcore_num)
+		, mlayer(m_internal_layer_tbl)
+	{
+	}
+
+
+	LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
+	{
+		//共通作業をここで行う。
+
+		//他のレイヤーの組み合わせではない層に対しては、ここの処理を行う。
+		//他のレイヤーに入力を任せるような層でここを行うのは重複処理になるので、
+		//判定を入れる。
+		if (unique_implimention_layer)
 		{
-			std::cout << "The number of input tensor must be " << m_input_tensor_num
-				<< ". \nBut current input num is " << input_tensors.size() << "."
-				<< std::endl;
-			exit(1);
+			//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。
+			if (input_tensors.size() != m_input_tensor_num)
+			{
+				std::cout << "The number of input tensor must be " << m_input_tensor_num
+					<< ". \nBut current input num is " << input_tensors.size() << "."
+					<< std::endl;
+				exit(1);
+			}
+
+			//入力テンソル間のGPU利用設定に矛盾がないかチェックする。
+			bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
+			for (u32 i = 1; i < m_input_tensor_num; i++)
+			{
+				if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
+				{
+					std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
+					exit(1);
+				}
+			}
+
+			if (m_init_finish && (on_cuda != m_on_cuda))
+			{
+				std::cout << "Between input and layer, CPU/GPU setting contradict!" << std::endl;
+				exit(1);
+			}
+
+			//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
+			for (u32 i = 0; i < m_input_tensor_num; i++)
+			{
+				//過去に入力があった場合、i番目の入力スロットに過去の入力テンソルが登録されている。
+				//それをここで一度解除する。
+				if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
+				{
+					//上流テンソルに依頼して、双方向にリンクを切ってもらう。
+					p->disconnect_bidirection();
+				}
+
+				auto& tensorcore = input_tensors[i].pTensorCore;
+
+				//過去にどこかの層に入力されていた場合、下流の層情報が登録されている。
+				//ここでそれを解除する。
+				if (tensorcore->_m_downstream_layer)
+				{
+					tensorcore->disconnect_bidirection();
+				}
+				mInputTensorCoreTbl[i] = tensorcore;
+				tensorcore->connect(shared_from_this(), i);
+			}
+
+			//初期化が済んでいない場合、これを呼ぶとリソースエラーになる。
+			//ただし、初期化が済んでない場合には以下のforward内部でリソースが確保され、同時にbackward_finishの
+			//フラグはfalseに設定されるので、ロジック的にはここでfalseにしているのと同じになっている。
+			if (m_init_finish)
+			{
+				for (const auto& child_tensorcore : m_child_tensorcore_tbl)
+				{
+					child_tensorcore->backward_finish = false;
+				}
+			}
+
+		}
+		//各層毎の順伝搬を実際に実行する。
+		return forward(input_tensors);
+	}
+
+	void LayerCore::callBackward()
+	{
+		std::cout << "call backward\n";
+		//逆伝搬の処理
+		for (const auto& child_tensorcore : m_child_tensorcore_tbl)
+		{
+			if (!child_tensorcore->backward_finish)
+			{
+				return;
+			}
 		}
 
-		//入力テンソル間のGPU利用設定に矛盾がないかチェックする。
-		bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
-		for (u32 i = 1; i < m_input_tensor_num; i++)
+		backward();
+
+
+		//上流へ逆伝搬の指示を送る
+		//一度入力テンソル（＝親テンソル）に指示を送り、そこを仲介して
+		//上流層へと指示を送る。
+		for (const auto& input_tensor_core : mInputTensorCoreTbl)
 		{
-			if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
+			if (std::shared_ptr<TensorCore> input_tensor_core_as_shared = input_tensor_core.lock())
 			{
-				std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
+				input_tensor_core_as_shared->backward_finish = true;
+
+				//勾配情報がいらない層の更に上流層も勾配情報はいらないはずなのでスキップ
+				if (!input_tensor_core_as_shared->_m_need_grad)
+				{
+					continue;
+				}
+
+				input_tensor_core_as_shared->callBackward();
+			}
+			else
+			{
+				std::cout << "Resource error@LayerCore::callBackward" << std::endl;
 				exit(1);
 			}
 		}
-
-		if (m_init_finish && (on_cuda != m_on_cuda))
-		{
-			std::cout << "Between input and layer, CPU/GPU setting contradict!" << std::endl;
-			exit(1);
-		}
-
-		//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
-		for (u32 i = 0; i < m_input_tensor_num; i++)
-		{
-			//過去に入力があった場合、i番目の入力スロットに過去の入力テンソルが登録されている。
-			//それをここで一度解除する。
-			if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
-			{
-				//上流テンソルに依頼して、双方向にリンクを切ってもらう。
-				p->disconnect_bidirection();
-			}
-
-			auto& tensorcore = input_tensors[i].pTensorCore;
-
-			//過去にどこかの層に入力されていた場合、下流の層情報が登録されている。
-			//ここでそれを解除する。
-			if (tensorcore->_m_downstream_layer)
-			{
-				tensorcore->disconnect_bidirection();
-			}
-			mInputTensorCoreTbl[i] = tensorcore;
-			tensorcore->connect(shared_from_this(), i);
-		}
-
-		//初期化が済んでいない場合、これを呼ぶとリソースエラーになる。
-		//ただし、初期化が済んでない場合には以下のforward内部でリソースが確保され、同時にbackward_finishの
-		//フラグはfalseに設定されるので、ロジック的にはここでfalseにしているのと同じになっている。
-		if (m_init_finish)
-		{
-			for (const auto& child_tensorcore : m_child_tensorcore_tbl)
-			{
-				child_tensorcore->backward_finish = false;
-			}
-		}
-
 	}
-	//各層毎の順伝搬を実際に実行する。
-	return forward(input_tensors);
-}
 
-void LayerCore::callBackward()
-{
-	std::cout << "call backward\n";
-	//逆伝搬の処理
-	for (const auto& child_tensorcore : m_child_tensorcore_tbl)
+	void LayerCore::regist_this_to_output_tensor()
 	{
-		if (!child_tensorcore->backward_finish)
+		//ここが動作不良を起こすかもしれない。
+			//参照エラーが出たらここを疑う。
+		for (u32 i = 0; i < m_output_tensor_num; i++)
 		{
-			return;
+			std::shared_ptr<LayerCore> shared_ptr_of_this = shared_from_this();
+			m_child_tensorcore_tbl[i]->regist_parent_layercore(shared_ptr_of_this);
 		}
 	}
 
-	backward();
 
 
-	//上流へ逆伝搬の指示を送る
-	//一度入力テンソル（＝親テンソル）に指示を送り、そこを仲介して
-	//上流層へと指示を送る。
-	for (const auto& input_tensor_core : mInputTensorCoreTbl)
+	LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1)
 	{
-		if (std::shared_ptr<TensorCore> input_tensor_core_as_shared = input_tensor_core.lock())
-		{
-			input_tensor_core_as_shared->backward_finish = true;
-
-			//勾配情報がいらない層の更に上流層も勾配情報はいらないはずなのでスキップ
-			if (!input_tensor_core_as_shared->_m_need_grad)
-			{
-				continue;
-			}
-
-			input_tensor_core_as_shared->callBackward();
-		}
-		else
-		{
-			std::cout << "Resource error@LayerCore::callBackward" << std::endl;
-			exit(1);
-		}
+		Layer add = Add();
+		return add(input0[0], input1[0]);
 	}
-}
 
-void LayerCore::regist_this_to_output_tensor()
-{
-	//ここが動作不良を起こすかもしれない。
-		//参照エラーが出たらここを疑う。
-	for (u32 i = 0; i < m_output_tensor_num; i++)
+
+	LayerCore::iotype operator+(const tensor::Tensor& input0, const  tensor::Tensor& input1)
 	{
-		std::shared_ptr<LayerCore> shared_ptr_of_this = shared_from_this();
-		m_child_tensorcore_tbl[i]->regist_parent_layercore(shared_ptr_of_this);
+		Layer add = Add();
+		return add(LayerCore::iotype{ input0, input1 });
 	}
-}
 
 
+	//LayerCore::Layer::Layer(const Layer& layer)
+	//	:mLayerCore(layer.getLayerCore())
+	//	,mLayerName(layer.mLayerName)
+	//{}
 
-LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1)
-{
-	Layer add = Add();
-	return add(input0[0], input1[0]);
-}
+	LayerCore::Layer::Layer(const Layer& layer)
+		:mLayerCore(layer.mLayerCore)
+		, mLayerName(layer.mLayerName)
+	{}
 
+	LayerCore::Layer::Layer(const std::shared_ptr<LayerCore>& tensorcore, std::string name)
+		:mLayerCore(tensorcore)
+		, mLayerName(name)
+	{}
 
-LayerCore::iotype operator+(const Tensor& input0, const Tensor& input1)
-{
-	Layer add = Add();
-	return add(LayerCore::iotype{ input0, input1 });
-}
+	LayerCore::iotype Layer::operator()(const LayerCore::iotype& input) const
+	{
+		return mLayerCore->callForward(input);
+	}
 
-
-//LayerCore::Layer::Layer(const Layer& layer)
-//	:mLayerCore(layer.getLayerCore())
-//	,mLayerName(layer.mLayerName)
-//{}
-
-LayerCore::Layer::Layer(const Layer& layer)
-	:mLayerCore(layer.mLayerCore)
-	, mLayerName(layer.mLayerName)
-{}
-
-LayerCore::Layer::Layer(const std::shared_ptr<LayerCore>& tensorcore, std::string name)
-	:mLayerCore(tensorcore)
-	, mLayerName(name)
-{}
-
-LayerCore::iotype Layer::operator()(const LayerCore::iotype& input) const
-{
-	return mLayerCore->callForward(input);
 }
