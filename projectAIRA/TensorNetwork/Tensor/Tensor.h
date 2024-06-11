@@ -38,7 +38,17 @@ public:
 	DataType& operator()(u32, u32, u32);
 	DataType operator()(u32, u32) const;
 	DataType& operator()(u32, u32);
+	DataType  operator()(u32) const;
+	DataType& operator()(u32);
 
+	DataType  d(u32, u32, u32, u32) const;
+	DataType& d(u32, u32, u32, u32);
+	DataType  d(u32, u32, u32) const;
+	DataType& d(u32, u32, u32);
+	DataType  d(u32, u32) const;
+	DataType& d(u32, u32);
+	DataType  d(u32) const;
+	DataType& d(u32);
 
 	static DataType getLoss(const Tensor&);
 

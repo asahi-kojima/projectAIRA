@@ -97,7 +97,7 @@ void init(Tensor& t, DataType value)
 {
 	for (u32 i = 0; i < t.getDataSize(); i++)
 	{
-		Accessor2TensorCore::set_value(t, i, value);
+		t(i) = value;
 	}
 }
 
@@ -105,7 +105,7 @@ void init_linear(Tensor& t, DataType value)
 {
 	for (u32 i = 0; i < t.getDataSize(); i++)
 	{
-		Accessor2TensorCore::set_value(t, i, value * i);
+		t(i) = value * i;
 	}
 }
 
@@ -116,20 +116,20 @@ void init_normal(Tensor& t)
 	std::normal_distribution<float> dist(0.0f, 1.0);
 	for (u32 i = 0; i < t.getDataSize(); i++)
 	{
-		Accessor2TensorCore::set_value(t, i, dist(engine));
+		t(i) = dist(engine);
 	}
 }
 
 
 void confirm(const Tensor& tensor)
 {
-	const auto dataSize = Accessor2TensorCore::getDataSize(tensor);
-	const auto pointer = Accessor2TensorCore::getAddressOnCpuFrom(tensor);
+	const auto dataSize = tensor.getDataSize();
+	//const auto pointer = Accessor2TensorCore::getAddressOnCpuFrom(tensor);
 
 	std::vector<DataType> v(dataSize);
 	for (u32 i = 0; i < dataSize; i++)
 	{
-		v[i] = pointer[i];
+		v[i] = tensor(i);
 	}
 }
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
@@ -185,7 +185,7 @@ int main()
 			{
 				const u32 batched_index = Bn * (dataSize * batch_size) + (N * dataSize + i);
 				const u32 index = N * dataSize + i;
-				Accessor2TensorCore::set_value(tensor, index, trainingData[batched_index]);
+				tensor(index) = trainingData[batched_index];
 			}
 		}
 	}
@@ -196,7 +196,7 @@ int main()
 		for (u32 N = 0; N < batch_size; N++)
 		{
 			const u32 batched_index = Bn *  batch_size + N;
-			Accessor2TensorCore::set_value(tensor, N, trainingLabel[batched_index]);
+			tensor(N) = trainingLabel[batched_index];
 		}
 	}
 	
@@ -335,6 +335,7 @@ int main()
 	////テスト8
 	{
 		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(100), ReLU(), Affine(10));
 		auto lossFunc = CrossEntropyWithSM();
 		std::cout << "===============================" << std::endl;
 		std::cout << "Test8" << std::endl;
@@ -347,8 +348,8 @@ int main()
 			std::cout << "-------------------------------" << std::endl;
 			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
 			{
-				Tensor& training_tensor = input_tensor_tbl[Bn];
-				Tensor& correct_tensor = correct_tensor_tbl[Bn];
+				Tensor& training_tensor = input_tensor_tbl[Bn]; training_tensor.to_cuda("");
+				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda("");
 				auto t = seq(training_tensor);
 				auto loss = lossFunc(t[0], correct_tensor);
 				std::cout << Tensor::getLoss(loss[0]) << std::endl;

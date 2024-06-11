@@ -75,29 +75,69 @@ namespace aoba::nn::tensor
 
 	DataType Tensor::operator()(u32 batchSize, u32 channel, u32 height, u32 width) const
 	{
-		return (*this)(batchSize, channel, height, width);
+		return (*pTensorCore)(batchSize, channel, height, width);
 	}
 	DataType& Tensor::operator()(u32 batchSize, u32 channel, u32 height, u32 width)
 	{
-		return (*this)(batchSize, channel, height, width);
+		return (*pTensorCore)(batchSize, channel, height, width);
 	}
 	DataType Tensor::operator()(u32 batchSize, u32 height, u32 width) const
 	{
-		return (*this)(batchSize, height, width);
+		return (*pTensorCore)(batchSize, height, width);
 	}
 	DataType& Tensor::operator()(u32 batchSize, u32 height, u32 width)
 	{
-		return (*this)(batchSize, height, width);
+		return (*pTensorCore)(batchSize, height, width);
 	}
 	DataType Tensor::operator()(u32 batchSize, u32 width) const
 	{
-		return (*this)(batchSize, width);
+		return (*pTensorCore)(batchSize, width);
 	}
 	DataType& Tensor::operator()(u32 batchSize, u32 width)
 	{
-		return (*this)(batchSize, width);
+		return (*pTensorCore)(batchSize, width);
+	}
+	DataType Tensor::operator()(u32 index) const
+	{
+		return (*pTensorCore)(index);
+	}
+	DataType& Tensor::operator()(u32 index)
+	{
+		return (*pTensorCore)(index);
 	}
 
+	DataType Tensor::d(u32 batchSize, u32 channel, u32 height, u32 width) const
+	{
+		return pTensorCore->d(batchSize, channel, height, width);
+	}
+	DataType& Tensor::d(u32 batchSize, u32 channel, u32 height, u32 width)
+	{
+		return pTensorCore->d(batchSize, channel, height, width);
+	}
+	DataType Tensor::d(u32 batchSize, u32 height, u32 width) const
+	{
+		return pTensorCore->d(batchSize, height, width);
+	}
+	DataType& Tensor::d(u32 batchSize, u32 height, u32 width)
+	{
+		return pTensorCore->d(batchSize, height, width);
+	}
+	DataType Tensor::d(u32 batchSize, u32 width) const
+	{
+		return pTensorCore->d(batchSize, width);
+	}
+	DataType& Tensor::d(u32 batchSize, u32 width)
+	{
+		return pTensorCore->d(batchSize, width);
+	}
+	DataType Tensor::d(u32 index) const
+	{
+		return pTensorCore->d(index);
+	}
+	DataType& Tensor::d(u32 index)
+	{
+		return pTensorCore->d(index);
+	}
 
 	DataType Tensor::getLoss(const Tensor& tensor)
 	{

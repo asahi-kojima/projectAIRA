@@ -33,12 +33,12 @@ namespace aoba
 		namespace layer
 		{
 			class LayerCore;
-			class CrossEntropyWithSMCore;
 			class AddCore;
-			class SplitCore;
-			class ReLUCore;
 			class AffineCore;
+			class ReLUCore;
+			class SplitCore;
 			class L2LossCore;
+			class CrossEntropyWithSMCore;
 		}
 	}
 }
@@ -54,15 +54,13 @@ public:
 	friend class layer::LayerCore;
 	friend class Accessor2TensorCore;
 
-	//primitiveなクラスは特権的にフレンドにしている。
+	//primitiveなクラスは速度の為に特権的にフレンドにしている。
 	friend class layer::AddCore;
-	friend class layer::SplitCore;
-	friend class layer::ReLUCore;
 	friend class layer::AffineCore;
-
-	//LossFunction
-	friend class layer::L2LossCore;
+	friend class layer::ReLUCore;
+	friend class layer::SplitCore;
 	friend class layer::CrossEntropyWithSMCore;
+	friend class layer::L2LossCore;
 
 
 

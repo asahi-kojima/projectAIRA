@@ -7,8 +7,11 @@ namespace
 
 
 	__global__ void affine_forward_gpu_impl(
-		f32* y, f32* A,
-		f32* x, f32* b, u32 batchSize, u32 outputSize, u32 inputSize)
+		f32* y, 
+		f32* x, 
+		f32* A,
+		f32* b, 
+		u32 batchSize, u32 outputSize, u32 inputSize)
 	{
 		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
 		u32 yid = blockIdx.y * blockDim.y + threadIdx.y;
@@ -17,7 +20,6 @@ namespace
 			return;
 		}
 		u32 id = yid * outputSize + xid;
-
 		f32 result = 0.0f;
 		for (u32 i = 0; i < inputSize; i++)
 		{
