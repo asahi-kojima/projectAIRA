@@ -1,6 +1,6 @@
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include "ReLU.h"
+#include "nnLayer.h"
+
 
 
 namespace
@@ -58,22 +58,23 @@ namespace
 	}
 }
 
-using ReLUCore = aoba::nn::layer::ReLUCore;
-using LayerCore = aoba::nn::layer::LayerCore;
+using namespace aoba::nn::layer;
+using ReLUCore = Layer::ReLUCore;
+using LayerSkeleton = Layer::LayerSkeleton;
 
-Layer ReLU()
+Layer::nnLayer aoba::nn::layer::ReLU()
 {
-	Layer relu = aoba::nn::layer::gen<ReLUCore>("Add");
+	Layer::nnLayer relu = gen<ReLUCore>("Add");
 	return relu;
 }
 
 ReLUCore::ReLUCore()
-	: LayerCore(1, 1, 1, 1)
+	: LayerSkeleton(1, 1, 1, 1)
 {
 }
 
 
-LayerCore::iotype ReLUCore::forward(const LayerCore::iotype& input_tensors)
+LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
 

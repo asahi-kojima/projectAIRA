@@ -1,4 +1,5 @@
 #include "TensorCore.h"
+#include "Tensor.h"
 #include "Layer/Layer.h"
 
 namespace
@@ -163,7 +164,7 @@ void TensorCore::to_cuda(const std::string& device_name)
 
 void TensorCore::callBackward() const
 {
-	if (std::shared_ptr<layer::LayerCore> parentLayerCore = _m_upstream_layer.lock())
+	if (std::shared_ptr<layer::Layer::LayerSkeleton> parentLayerCore = _m_upstream_layer.lock())
 	{
 		parentLayerCore->callBackward();
 	}
@@ -180,7 +181,7 @@ void TensorCore::callBackward() const
 
 
 
-void TensorCore::regist_parent_layercore(const std::shared_ptr<layer::LayerCore>& parent_layercore)
+void TensorCore::regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>& parent_layercore)
 {
 	_m_upstream_layer = parent_layercore;
 	m_parent_exist = true;
@@ -705,7 +706,7 @@ void TensorCore::synchronize_from_GPU_to_CPU()
 	CHECK(cudaMemcpy(_m_cpu_grad_data_address, _m_gpu_grad_data_address, mDataSize * sizeof(DataType), cudaMemcpyDeviceToHost));
 	CUDA_SYNCHRONIZE_DEBUG;
 }
-void TensorCore::connect(const std::shared_ptr<layer::LayerCore>& layercore, u32 location)
+void TensorCore::connect(const std::shared_ptr<layer::Layer::LayerSkeleton>& layercore, u32 location)
 {
 	_m_downstream_layer = layercore;
 	_m_location_in_downstream_layer = location;
@@ -748,13 +749,13 @@ void TensorCore::memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address
 
 void TensorCore::memcpyFromVector(Tensor& tensor, const std::vector<DataType>& vec)
 {
-	auto& tensorcore = *tensor.pTensorCore;
-	if (tensorcore.mDataSize != vec.size())
+	auto& tensorcore = tensor;
+	if (tensorcore.getDataSize() != vec.size())
 	{
 		assert(0);
 	}
 
-	for (u32 i = 0, end = tensorcore.mDataSize; i < end; i++)
+	for (u32 i = 0, end = tensorcore.getDataSize(); i < end; i++)
 	{
 		tensorcore(i) = vec[i];
 	}

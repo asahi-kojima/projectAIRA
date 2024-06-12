@@ -1,7 +1,6 @@
-
-#include "Affine.h"
 #include <random>
-
+#include "Affine.h"
+#include "nnLayer.h"
 namespace
 {
 
@@ -28,7 +27,11 @@ namespace
 		y[id] = result + b[xid];
 	}
 
-	__global__ void affine_backward_gpu_impl_input(DataType* dOut, DataType* dIn, DataType* A, u32 batchSize, u32 outputSize, u32 inputSize)
+	__global__ void affine_backward_gpu_impl_input(
+		DataType* dOut, 
+		DataType* dIn, 
+		DataType* A, 
+		u32 batchSize, u32 outputSize, u32 inputSize)
 	{
 		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;//input
 		u32 yid = blockIdx.y * blockDim.y + threadIdx.y;//batch
@@ -114,13 +117,14 @@ namespace
 	}
 }
 
-using AffineCore = aoba::nn::layer::AffineCore;
-using LayerCore = aoba::nn::layer::LayerCore;
+using namespace aoba::nn::layer;
+using AffineCore = Layer::AffineCore;
+using LayerSkeleton = Layer::LayerSkeleton;
 
 
-Layer Affine(u32 output_size)
+Layer::nnLayer aoba::nn::layer::Affine(u32 output_size)
 {
-	Layer affine = aoba::nn::layer::gen<AffineCore>("Affine", output_size);
+	Layer::nnLayer affine = gen<AffineCore>("Affine", output_size);
 	return affine;
 }
 
@@ -128,7 +132,7 @@ Layer Affine(u32 output_size)
 
 
 AffineCore::AffineCore(u32 output_size)
-	:LayerCore(1, 1, 1, 2)
+	:LayerSkeleton(1, 1, 1, 2)
 	, m_batch_size(0)
 	, m_input_size(0)
 	, m_output_size(output_size)
@@ -138,7 +142,7 @@ AffineCore::AffineCore(u32 output_size)
 AffineCore::~AffineCore()
 {}
 
-LayerCore::iotype  AffineCore::forward(const LayerCore::iotype& input_tensors)
+LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
 
@@ -314,7 +318,7 @@ void AffineCore::backward()
 
 
 
-void AffineCore::affine_forward_cpu_impl(const LayerCore::iotype& input_tensors)
+void AffineCore::affine_forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input = *getTensorCoreFrom(input_tensors[0]);
 	auto& output = *m_child_tensorcore_tbl[0];

@@ -1,5 +1,5 @@
 #include "Split.h"
-
+#include "nnLayer.h"
 namespace
 {
 	void split_forward_impl_cpu(DataType* input_ptr, DataType* output0_ptr, DataType* output1_ptr, u32 data_size)
@@ -45,25 +45,26 @@ namespace
 	}
 }
 
-using SplitCore = aoba::nn::layer::SplitCore;
-using LayerCore = aoba::nn::layer::LayerCore;
+using namespace aoba::nn::layer;
+using SplitCore = Layer::SplitCore;
+using LayerSkeleton = Layer::LayerSkeleton;
 
 
-Layer Split()
+Layer::nnLayer Split()
 {
-	Layer add_layer = aoba::nn::layer::gen<SplitCore>("Add");
+	Layer::nnLayer add_layer = gen<SplitCore>("Add");
 	return add_layer;
 }
 
 
 SplitCore::SplitCore()
-	: LayerCore(1, 2, 2)
+	: LayerSkeleton(1, 2, 2)
 {
 }
 
 
 
-LayerCore::iotype SplitCore::forward(const LayerCore::iotype& input_tensors)
+LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
 

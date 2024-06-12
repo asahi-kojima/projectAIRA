@@ -1,20 +1,30 @@
 #pragma once
 #include "Layer.h"
 
-namespace aoba { namespace nn { namespace layer { class ReLUCore; } } }
-
-
-class aoba::nn::layer::ReLUCore : public LayerCore
+namespace aoba 
 {
-public:
-	ReLUCore();
-	~ReLUCore() {}
+	namespace nn
+	{
+		namespace layer
+		{
 
-private:
-	virtual iotype forward(const iotype& input_tensors) override;
-	virtual void backward() override;
-};
+			class Layer::ReLUCore : public Layer::LayerSkeleton
+			{
+			public:
+				ReLUCore();
+				~ReLUCore() {}
+
+			private:
+				virtual iotype forward(const iotype& input_tensors) override;
+				virtual void backward() override;
+			};
 
 
-Layer ReLU();
+			Layer::nnLayer ReLU();
+		}
+	}
+}
+
+
+
 

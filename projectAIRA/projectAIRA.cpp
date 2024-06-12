@@ -19,7 +19,7 @@ using namespace layer;
 using namespace optimizer;
 using namespace tensor;
 
-std::tuple<Tensor, Tensor> convert(const LayerCore::iotype& tensor_vec)
+std::tuple<Tensor, Tensor> convert(const Layer::LayerSkeleton::iotype& tensor_vec)
 {
 	if (tensor_vec.size() != 2)
 	{
@@ -134,12 +134,12 @@ void confirm(const Tensor& tensor)
 }
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
 
-class MyLayer : public LayerCore
+class MyLayer : public nnModule
 {
 public:
 	MyLayer()
 	{
-		seq = Sequential(ReLU(), ReLU());
+		seq = aoba::nn::layer::Sequential(ReLU(), ReLU());
 	}
 
 	iotype forward(const iotype& input) override
@@ -147,7 +147,7 @@ public:
 		return seq(input);
 	}
 
-	Layer seq;
+	aoba::nn::layer::Layer::nnLayer seq;
 };
 
 
@@ -195,11 +195,11 @@ int main()
 		auto& tensor = correct_tensor_tbl[Bn];
 		for (u32 N = 0; N < batch_size; N++)
 		{
-			const u32 batched_index = Bn *  batch_size + N;
+			const u32 batched_index = Bn * batch_size + N;
 			tensor(N) = trainingLabel[batched_index];
 		}
 	}
-	
+
 	int sss = 1 + 1;
 	//////テスト１
 	//{
@@ -334,9 +334,11 @@ int main()
 
 	////テスト8
 	{
-		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		//auto seq = Sequential(Affine(100), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		auto seq = Sequential(Affine(100), ReLU(), Affine(10));
 		auto lossFunc = CrossEntropyWithSM();
+		auto optim = Optimizer::SGD(0.1f * 10);
+		optim(seq);
 		std::cout << "===============================" << std::endl;
 		std::cout << "Test8" << std::endl;
 		std::cout << "===============================" << std::endl;
@@ -348,17 +350,16 @@ int main()
 			std::cout << "-------------------------------" << std::endl;
 			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
 			{
-				Tensor& training_tensor = input_tensor_tbl[Bn]; training_tensor.to_cuda("");
-				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda("");
+				Tensor& training_tensor = input_tensor_tbl[Bn];  //training_tensor.to_cuda("");
+				Tensor& correct_tensor = correct_tensor_tbl[Bn]; //correct_tensor.to_cuda("");
 				auto t = seq(training_tensor);
 				auto loss = lossFunc(t[0], correct_tensor);
 				std::cout << Tensor::getLoss(loss[0]) << std::endl;
 				loss[0].backward();
+				optim.optimize();
 			}
 		}
 
-		auto optim = aoba::nn::optimizer::SGD(0.01f);
-		optim.optimize();
 	}
 	std::cout << "free check" << std::endl;
 }

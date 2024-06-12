@@ -1,4 +1,5 @@
 #include "CrossEntropyWithSM.h"
+#include "nnLayer.h"
 
 namespace
 {
@@ -57,19 +58,19 @@ namespace
 	}
 }
 
+using namespace aoba::nn::layer;
+using CrossEntropyWithSMCore = Layer::CrossEntropyWithSMCore;
+using LayerSkeleton = Layer::LayerSkeleton;
 
-using CrossEntropyWithSMCore = aoba::nn::layer::CrossEntropyWithSMCore;
-using LayerCore = aoba::nn::layer::LayerCore;
-
-Layer CrossEntropyWithSM()
+Layer::nnLayer aoba::nn::layer::CrossEntropyWithSM()
 {
-	Layer add_layer = aoba::nn::layer::gen<CrossEntropyWithSMCore>("CrossEntropyWithSM");
+	Layer::nnLayer add_layer = gen<CrossEntropyWithSMCore>("CrossEntropyWithSM");
 	return add_layer;
 }
 
 
 CrossEntropyWithSMCore::CrossEntropyWithSMCore()
-	: LayerCore(2, 1, 1)
+	: LayerSkeleton(2, 1, 1)
 	, m_batch_size(0)
 	, m_label_num(0)
 {
@@ -77,7 +78,7 @@ CrossEntropyWithSMCore::CrossEntropyWithSMCore()
 
 
 
-LayerCore::iotype CrossEntropyWithSMCore::forward(const LayerCore::iotype& input_tensors)
+LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& inference = *getTensorCoreFrom(input_tensors[0]);
 	const auto& correct = *getTensorCoreFrom(input_tensors[1]);
@@ -195,7 +196,7 @@ void CrossEntropyWithSMCore::backward()
 }
 
 
-void CrossEntropyWithSMCore::crossEntropyWithSM_forward_cpu_impl(const LayerCore::iotype& input_tensors)
+void CrossEntropyWithSMCore::crossEntropyWithSM_forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& inference = *getTensorCoreFrom(input_tensors[0]);
 	const auto& correct = *getTensorCoreFrom(input_tensors[1]);

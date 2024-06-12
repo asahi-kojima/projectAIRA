@@ -2,7 +2,7 @@
 
 namespace
 {
-	void relu_forward_cpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
+	void add_forward_cpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
 	{
 		for (u32 i = 0; i < data_size; i++)
 		{
@@ -10,7 +10,7 @@ namespace
 		}
 	}
 
-	__global__ void relu_forward_gpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
+	__global__ void add_forward_gpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
 	{
 		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
 		if (xid >= data_size)
@@ -23,7 +23,7 @@ namespace
 
 
 
-	void relu_backward_cpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
+	void add_backward_cpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
 	{
 		for (u32 i = 0; i < data_size; i++)
 		{
@@ -38,7 +38,7 @@ namespace
 		}
 	}
 
-	__global__ void relu_backward_gpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
+	__global__ void add_backward_gpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
 		if (i >= data_size)
@@ -57,24 +57,26 @@ namespace
 	}
 }
 
-using AddCore = aoba::nn::layer::AddCore;
-using LayerCore = aoba::nn::layer::LayerCore;
+using namespace aoba::nn::layer;
+using AddCore = Layer::AddCore;
+using LayerSkeleton = Layer::LayerSkeleton;
 
-Layer Add()
+
+Layer::nnLayer Add()
 {
-	Layer add_layer = aoba::nn::layer::gen<AddCore>("Add");
+	Layer::nnLayer add_layer = aoba::nn::layer::gen<AddCore>("Add");
 	return add_layer;
 }
 
 
 AddCore::AddCore()
-	: LayerCore(2, 1, 1)
+	: LayerSkeleton(2, 1, 1)
 {
 }
 
 
 
-LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
+LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input_tensorcore0 = *getTensorCoreFrom(input_tensors[0]);
 	const auto& input_tensorcore1 = *getTensorCoreFrom(input_tensors[1]);
@@ -125,7 +127,7 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 
 		dim3 block(256);
 		dim3 grid((dataSize + block.x - 1) / block.x);
-		relu_forward_gpu_impl << <grid, block >> > (input_address0, input_address1, output_address, dataSize);
+		add_forward_gpu_impl << <grid, block >> > (input_address0, input_address1, output_address, dataSize);
 		CUDA_SYNCHRONIZE_DEBUG;
 	}
 	else
@@ -133,7 +135,7 @@ LayerCore::iotype AddCore::forward(const LayerCore::iotype& input_tensors)
 		auto input_address0 = input_tensorcore0._m_cpu_data_address;
 		auto input_address1 = input_tensorcore1._m_cpu_data_address;
 		auto output_address = child_tensorcore._m_cpu_data_address;
-		relu_forward_cpu_impl(input_address0, input_address1, output_address, dataSize);
+		add_forward_cpu_impl(input_address0, input_address1, output_address, dataSize);
 	}
 
 	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
@@ -162,7 +164,7 @@ void AddCore::backward()
 
 					dim3 block(256);
 					dim3 grid((dataSize + block.x - 1) / block.x);
-					relu_backward_gpu_impl << <grid, block >> > (input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					add_backward_gpu_impl << <grid, block >> > (input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
 					CUDA_SYNCHRONIZE_DEBUG;
 				}
 				else
@@ -170,7 +172,7 @@ void AddCore::backward()
 					auto output_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
 					auto input_address0 = input_tensor_core0->_m_cpu_grad_data_address;
 					auto input_address1 = input_tensor_core1->_m_cpu_grad_data_address;
-					relu_backward_cpu_impl(input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					add_backward_cpu_impl(input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
 				}
 			}
 		}

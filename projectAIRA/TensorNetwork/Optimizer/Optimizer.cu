@@ -1,91 +1,84 @@
 #include "Optimizer.h"
 
-using Optimizer = aoba::nn::optimizer::Optimizer;
+using OptimizerSkeleton = aoba::nn::optimizer::Optimizer::OptimizerSkeleton;
 
 
-Optimizer::Optimizer(u32 learningRate)
+OptimizerSkeleton::OptimizerSkeleton(u32 learningRate)
 	:mLearningRate(learningRate)
-	, mLinkedParameters(nullptr)
+	, m_OptimizeScheduled_LayerCore_tbl(0)
+	//, mLinkedParameters(nullptr)
+	, mIsInitialized(false)
 {
 }
 
-Optimizer::~Optimizer()
+OptimizerSkeleton::~OptimizerSkeleton()
 {
-	LinkedList* current = mLinkedParameters;
-	while (true)
-	{
-		auto next = current->next;
-		delete current;
+	//LinkedList* current = mLinkedParameters;
+	//while (true)
+	//{
+	//	auto next = current->next;
+	//	delete current;
 
-		if (!next)
-		{
-			break;
-		}
-	}
+	//	if (!next)
+	//	{
+	//		break;
+	//	}
+	//}
 }
 
-void Optimizer::operator()(const Layer& layer)
+void OptimizerSkeleton::operator()(const layer::Layer::nnLayer& layer)
 {
 	const auto& layercore = *layer.getLayerCore();
-	LinkedList* current = mLinkedParameters;
-	while (true)
-	{
-		auto next = current->next;
-		if (next)
-		{
-			current = next;
-		}
-		else
-		{
-			break;
-		}
-	}
-	for (auto iter = layercore.m_parameter_tbl.begin(), end = layercore.m_parameter_tbl.end(); iter != end; iter++)
-	{
-		LinkedList* newtTable = new LinkedList(*iter, nullptr);
-		current->next = newtTable;
-		current = newtTable->next;
-	}
 
-
+	m_OptimizeScheduled_LayerCore_tbl.push_back(layer.getLayerCore());
 	for (auto iter = layercore.m_internal_layer_tbl.begin(), end = layercore.m_internal_layer_tbl.end(); iter != end; iter++)
 	{
-		//(*this)(iter->second);
+		layer::Layer::nnLayer layer{iter->second, ""};
+		(*this)(layer);
 	}
 }
 
-void Optimizer::optimize()
+void OptimizerSkeleton::optimize()
 {
-	LinkedList* old = nullptr;
-	LinkedList* current = mLinkedParameters;
-	while (true)
+	//LinkedList* old = nullptr;
+	//LinkedList* current = mLinkedParameters;
+
+	if (!mIsInitialized)
 	{
-		if (current)
-		{
-			if (const std::shared_ptr<TensorCore>& tensorcore_as_shared = current->parameter.lock())
-			{
-				optimize_unique();
-
-				old = current;
-				current = current->next;
-			}
-			else
-			{
-				std::cout << "Resource unlock" << std::endl;
-				if (old)
-				{
-					old->next = current->next;
-					auto tmp = current;
-					current = current->next;
-					delete tmp;
-				}
-			}
-
-
-		}
-		else
-		{
-			break;
-		}
+		initialize();
+		mIsInitialized = true;
 	}
+
+	optimize_unique();
+
+	//while (true)
+	//{
+	//	if (current)
+	//	{
+	//		if (const std::shared_ptr<TensorCore>& tensorcore_as_shared = current->parameter.lock())
+	//		{
+	//			optimize_unique();
+
+	//			old = current;
+	//			current = current->next;
+	//		}
+	//		else
+	//		{
+	//			std::cout << "Resource unlock" << std::endl;
+	//			if (old)
+	//			{
+	//				old->next = current->next;
+	//				auto tmp = current;
+	//				current = current->next;
+	//				delete tmp;
+	//			}
+	//		}
+
+
+	//	}
+	//	else
+	//	{
+	//		break;
+	//	}
+	//}
 }

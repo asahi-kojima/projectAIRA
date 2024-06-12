@@ -1,8 +1,12 @@
-#include "Add.h"
 #include "Layer.h"
+#include "Tensor/Tensor.h"
+#include "nnLayer.h"
+
 namespace aoba::nn::layer
 {
-	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num)
+	using LayerSkeleton = Layer::LayerSkeleton;
+
+	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num)
 		: m_input_tensor_num(input_tensor_num)
 		, m_output_tensor_num(output_tensor_num)
 		, mInputTensorCoreTbl(input_tensor_num)
@@ -13,7 +17,7 @@ namespace aoba::nn::layer
 	{
 	}
 
-	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num)
+	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num)
 		: m_input_tensor_num(input_tensor_num)
 		, m_output_tensor_num(output_tensor_num)
 		, mInputTensorCoreTbl(input_tensor_num)
@@ -23,7 +27,7 @@ namespace aoba::nn::layer
 	{
 	}
 
-	LayerCore::LayerCore(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num, u32 parameter_num)
+	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num, u32 child_tensorcore_num, u32 parameter_num)
 		: m_input_tensor_num(input_tensor_num)
 		, m_output_tensor_num(output_tensor_num)
 		, mInputTensorCoreTbl(input_tensor_num)
@@ -33,8 +37,12 @@ namespace aoba::nn::layer
 	{
 	}
 
+	const std::shared_ptr<tensor::TensorCore>& LayerSkeleton::getTensorCoreFrom(const Tensor& tensor)
+	{
+		return tensor.pTensorCore;
+	}
 
-	LayerCore::iotype LayerCore::callForward(const iotype& input_tensors)
+	LayerSkeleton::iotype LayerSkeleton::callForward(const iotype& input_tensors)
 	{
 		//共通作業をここで行う。
 
@@ -108,7 +116,7 @@ namespace aoba::nn::layer
 		return forward(input_tensors);
 	}
 
-	void LayerCore::callBackward()
+	void LayerSkeleton::callBackward()
 	{
 		std::cout << "call backward\n";
 		//逆伝搬の処理
@@ -142,57 +150,57 @@ namespace aoba::nn::layer
 			}
 			else
 			{
-				std::cout << "Resource error@LayerCore::callBackward" << std::endl;
+				std::cout << "Resource error@LayerSkeleton::callBackward" << std::endl;
 				exit(1);
 			}
 		}
 	}
 
-	void LayerCore::regist_this_to_output_tensor()
+	void LayerSkeleton::regist_this_to_output_tensor()
 	{
 		//ここが動作不良を起こすかもしれない。
 			//参照エラーが出たらここを疑う。
 		for (u32 i = 0; i < m_output_tensor_num; i++)
 		{
-			std::shared_ptr<LayerCore> shared_ptr_of_this = shared_from_this();
+			std::shared_ptr<LayerSkeleton> shared_ptr_of_this = shared_from_this();
 			m_child_tensorcore_tbl[i]->regist_parent_layercore(shared_ptr_of_this);
 		}
 	}
 
 
 
-	LayerCore::iotype operator+(const LayerCore::iotype& input0, const LayerCore::iotype& input1)
-	{
-		Layer add = Add();
-		return add(input0[0], input1[0]);
-	}
+	//LayerSkeleton::iotype operator+(const LayerSkeleton::iotype& input0, const LayerSkeleton::iotype& input1)
+	//{
+	//	Layer add = Add();
+	//	return add(input0[0], input1[0]);
+	//}
 
 
-	LayerCore::iotype operator+(const tensor::Tensor& input0, const  tensor::Tensor& input1)
-	{
-		Layer add = Add();
-		return add(LayerCore::iotype{ input0, input1 });
-	}
+	//LayerSkeleton::iotype operator+(const tensor::Tensor& input0, const  tensor::Tensor& input1)
+	//{
+	//	Layer add = Add();
+	//	return add(LayerSkeleton::iotype{ input0, input1 });
+	//}
 
 
-	//LayerCore::Layer::Layer(const Layer& layer)
+	//LayerSkeleton::Layer::Layer(const Layer& layer)
 	//	:mLayerCore(layer.getLayerCore())
 	//	,mLayerName(layer.mLayerName)
 	//{}
 
-	LayerCore::Layer::Layer(const Layer& layer)
-		:mLayerCore(layer.mLayerCore)
+	Layer::nnLayer::nnLayer(const nnLayer& layer)
+		:mLayerSkeleton(layer.mLayerSkeleton)
 		, mLayerName(layer.mLayerName)
 	{}
 
-	LayerCore::Layer::Layer(const std::shared_ptr<LayerCore>& tensorcore, std::string name)
-		:mLayerCore(tensorcore)
+	Layer::nnLayer::nnLayer(const std::shared_ptr<LayerSkeleton>& tensorcore, std::string name)
+		:mLayerSkeleton(tensorcore)
 		, mLayerName(name)
 	{}
 
-	LayerCore::iotype Layer::operator()(const LayerCore::iotype& input) const
+	LayerSkeleton::iotype Layer::nnLayer::operator()(const LayerSkeleton::iotype& input) const
 	{
-		return mLayerCore->callForward(input);
+		return mLayerSkeleton->callForward(input);
 	}
 
 }

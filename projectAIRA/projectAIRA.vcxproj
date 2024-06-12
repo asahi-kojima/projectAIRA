@@ -133,7 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp" />
-    <ClCompile Include="TensorNetwork\Layer\Layer.cpp" />
+    <ClCompile Include="TensorNetwork\Layer\LayerSkeleton.cpp" />
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp" />
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp" />
   </ItemGroup>
@@ -148,6 +148,7 @@
     <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
+    <ClInclude Include="TensorNetwork\Layer\nnLayer.h" />
     <ClInclude Include="TensorNetwork\Layer\ReLU.h" />
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />

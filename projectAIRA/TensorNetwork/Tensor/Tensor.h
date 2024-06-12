@@ -5,14 +5,13 @@
 /// <summary>
 /// ユーザーにとってテンソルを扱うためのインターフェース
 /// </summary>
-class Accessor2TensorCore;
+
 namespace aoba { namespace nn { namespace tensor { class Tensor; } } }
 class aoba::nn::tensor::Tensor
 {
 public:
-	friend class aoba::nn::layer::LayerCore;
+	friend class aoba::nn::layer::Layer;
 	friend class TensorCore;
-	friend class Accessor2TensorCore;
 
 	Tensor();
 	Tensor(const Tensor& tensor);

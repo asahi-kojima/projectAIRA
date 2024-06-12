@@ -1,18 +1,27 @@
 #pragma once
 #include "Layer.h"
 
-namespace aoba { namespace nn { namespace layer { class SplitCore; } } }
 
-class aoba::nn::layer::SplitCore : public LayerCore
+namespace aoba
 {
-public:
-	SplitCore();
-	~SplitCore() {}
+	namespace nn
+	{
+		namespace layer
+		{
 
-private:
-	virtual iotype forward(const iotype& input_tensors)override;
-	virtual void backward() override;
-};
+			class Layer::SplitCore : public Layer::LayerSkeleton
+			{
+			public:
+				SplitCore();
+				~SplitCore() {}
+
+			private:
+				virtual iotype forward(const iotype& input_tensors)override;
+				virtual void backward() override;
+			};
 
 
-Layer Split();
+			Layer::nnLayer Split();
+		}
+	}
+}

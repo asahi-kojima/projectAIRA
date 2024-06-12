@@ -2,8 +2,18 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <map>
+#include <memory>
+#include <vector>
+#include <iostream>
+#include <cassert>
 #include "debug-setting.h"
-#include "Tensor/Tensor.h"
+#include "typeinfo.h"
+
+/*
+Layer.h
+TensorCore.h
+必ずこの順番でインクルードすること。
+*/
 
 namespace aoba
 {
@@ -16,16 +26,38 @@ namespace aoba
 
 		namespace layer
 		{
-			class LayerCore;
+			class Layer;
+		}
+
+		namespace tensor
+		{
+			class Tensor;
+			class TensorCore;
 		}
 	}
 }
 
+class aoba::nn::layer::Layer
+{
+public:
+	class nnLayer;
+
+	class LayerSkeleton;
+
+	class AffineCore;
+	class ReLUCore;
+	class AddCore;
+	class SplitCore;
+	class AddAsInnerCore;
+	class SequentialCore;
+
+	class CrossEntropyWithSMCore;
+};
 
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。
 //問題が起きたらここを疑う。
-class aoba::nn::layer::LayerCore : public std::enable_shared_from_this<LayerCore>
+class aoba::nn::layer::Layer::LayerSkeleton : public std::enable_shared_from_this<LayerSkeleton>
 {
 public:
 
@@ -33,10 +65,10 @@ public:
 	friend class aoba::nn::optimizer::Optimizer;
 	using iotype = std::vector<tensor::Tensor>;
 
-	LayerCore(u32 = 1, u32 = 1);
-	LayerCore(u32, u32, u32);
-	LayerCore(u32, u32, u32, u32);
-	virtual ~LayerCore() {}
+	LayerSkeleton(u32 = 1, u32 = 1);
+	LayerSkeleton(u32, u32, u32);
+	LayerSkeleton(u32, u32, u32, u32);
+	virtual ~LayerSkeleton() {}
 
 	iotype callForward(const iotype&);
 	void callBackward();
@@ -47,58 +79,11 @@ public:
 
 
 
-	class Layer
-	{
-	public:
-		template <typename T, typename ... Args>
-		friend Layer gen(Args ... args);
-		template <typename T, typename ... Args>
-		friend Layer gen(const char* layerName, Args ... args);
 
-		Layer() {}
-		Layer(const Layer&);
-		Layer(const std::shared_ptr<LayerCore>&, std::string);
-
-		LayerCore::iotype operator()(const LayerCore::iotype& input) const;
-
-		template <typename ... Args>
-		LayerCore::iotype operator()(Args ... args) const
-		{
-			Tensor tensor_tbl[] = { args... };
-			const u32 input_tensor_num = (sizeof(tensor_tbl) / sizeof(tensor_tbl[0]));
-
-			LayerCore::iotype input_tensor_as_vector(input_tensor_num);
-
-			for (u32 i = 0, end = input_tensor_num; i < end; i++)
-			{
-				input_tensor_as_vector[i] = tensor_tbl[i];
-			}
-
-			return mLayerCore->callForward(input_tensor_as_vector);
-		}
-		u32 get_input_tensor_num() const
-		{
-			return mLayerCore->get_input_tensor_num();
-		}
-
-		u32 get_output_tensor_num() const
-		{
-			return mLayerCore->get_output_tensor_num();
-		}
-
-		const std::shared_ptr<LayerCore>& getLayerCore() const
-		{
-			return mLayerCore;
-		}
-	private:
-		std::shared_ptr<LayerCore> mLayerCore;
-		std::string mLayerName;
-	};
 
 protected:
 	using TensorCore = aoba::nn::tensor::TensorCore;
 	using Tensor = aoba::nn::tensor::Tensor;
-
 
 	bool unique_implimention_layer = true;
 	bool m_init_finish = false;
@@ -107,8 +92,8 @@ protected:
 
 
 	std::vector<std::shared_ptr<TensorCore> > m_parameter_tbl;
-	std::map<std::string, Layer> m_internal_layer_tbl;
-	std::map<std::string, Layer>& mlayer;//上記のエイリアス:そのままだと長いから
+	std::map<std::string, std::shared_ptr<Layer::LayerSkeleton> > m_internal_layer_tbl;
+	std::map<std::string, std::shared_ptr<Layer::LayerSkeleton> >& mlayer;//上記のエイリアス:そのままだと長いから
 
 	/// <summary>
 	/// この層が生成したテンソル
@@ -131,63 +116,60 @@ protected:
 
 
 
-	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor)
-	{
-		return tensor.pTensorCore;
-	}
+	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor);
 
 private:
-	void common_check_before_forward(const iotype& input_tensors)
-	{
-		//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。
-		if (input_tensors.size() != m_input_tensor_num)
-		{
-			std::cout << "The number of input tensor must be " << m_input_tensor_num
-				<< ". \nBut current input num is " << input_tensors.size() << "."
-				<< std::endl;
-			exit(1);
-		}
-
-		//入力テンソル間のGPU利用設定に矛盾がないかチェックする。
-		bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
-		for (u32 i = 1; i < m_input_tensor_num; i++)
-		{
-			if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
-			{
-				std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
-				exit(1);
-			}
-		}
-
-		if (m_init_finish && (on_cuda != m_on_cuda))
-		{
-			std::cout << "Between input and layer, CPU/GPU setting contradict!" << std::endl;
-			exit(1);
-		}
-
-		//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
-		for (u32 i = 0; i < m_input_tensor_num; i++)
-		{
-			//過去に入力があった場合、i番目の入力スロットに過去の入力テンソルが登録されている。
-			//それをここで一度解除する。
-			if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
-			{
-				//上流テンソルに依頼して、双方向にリンクを切ってもらう。
-				p->disconnect_bidirection();
-			}
-
-			auto& tensorcore = input_tensors[i].pTensorCore;
-
-			//過去にどこかの層に入力されていた場合、下流の層情報が登録されている。
-			//ここでそれを解除する。
-			if (tensorcore->_m_downstream_layer)
-			{
-				tensorcore->disconnect_bidirection();
-			}
-			mInputTensorCoreTbl[i] = tensorcore;
-			tensorcore->connect(shared_from_this(), i);
-		}
-	}
+	void common_check_before_forward(const iotype& input_tensors);
+	//{
+	//	//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。
+	//	if (input_tensors.size() != m_input_tensor_num)
+	//	{
+	//		std::cout << "The number of input tensor must be " << m_input_tensor_num
+	//			<< ". \nBut current input num is " << input_tensors.size() << "."
+	//			<< std::endl;
+	//		exit(1);
+	//	}
+	//
+	//	//入力テンソル間のGPU利用設定に矛盾がないかチェックする。
+	//	bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
+	//	for (u32 i = 1; i < m_input_tensor_num; i++)
+	//	{
+	//		if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
+	//		{
+	//			std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
+	//			exit(1);
+	//		}
+	//	}
+	//
+	//	if (m_init_finish && (on_cuda != m_on_cuda))
+	//	{
+	//		std::cout << "Between input and layer, CPU/GPU setting contradict!" << std::endl;
+	//		exit(1);
+	//	}
+	//
+	//	//入力されたテンソルをこの層の入力テンソルテーブルに登録する。
+	//	for (u32 i = 0; i < m_input_tensor_num; i++)
+	//	{
+	//		//過去に入力があった場合、i番目の入力スロットに過去の入力テンソルが登録されている。
+	//		//それをここで一度解除する。
+	//		if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
+	//		{
+	//			//上流テンソルに依頼して、双方向にリンクを切ってもらう。
+	//			p->disconnect_bidirection();
+	//		}
+	//
+	//		auto& tensorcore = input_tensors[i].pTensorCore;
+	//
+	//		//過去にどこかの層に入力されていた場合、下流の層情報が登録されている。
+	//		//ここでそれを解除する。
+	//		if (tensorcore->_m_downstream_layer)
+	//		{
+	//			tensorcore->disconnect_bidirection();
+	//		}
+	//		mInputTensorCoreTbl[i] = tensorcore;
+	//		tensorcore->connect(shared_from_this(), i);
+	//	}
+	//}
 	void disconnect_bidirection(s32 location)
 	{
 		mInputTensorCoreTbl[location].reset();
@@ -222,69 +204,8 @@ private:
 };
 
 
+using nnModule = aoba::nn::layer::Layer::LayerSkeleton;
 
-class Accessor2TensorCore
-{
-public:
-	using TensorCore = aoba::nn::tensor::TensorCore;
-	using Tensor = aoba::nn::tensor::Tensor;
-
-	inline static DataType* getAddressOnCpuFrom(Tensor tensor)
-	{
-		return tensor.pTensorCore->_m_cpu_data_address;
-	}
-	inline static DataType* getAddressOnCpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->_m_cpu_data_address;
-	}
-	inline static DataType* getGradAddressOnCpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->_m_cpu_grad_data_address;
-	}
-	inline static DataType* getAddressOnGpuFrom(Tensor tensor)
-	{
-		return tensor.pTensorCore->_m_gpu_data_address;
-	}
-	inline static DataType* getAddressOnGpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->_m_gpu_data_address;
-	}
-	inline static DataType* getGradAddressOnGpuFrom(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->_m_gpu_grad_data_address;
-	}
-
-	inline static u32 getDataSize(Tensor tensor)
-	{
-		return tensor.pTensorCore->mDataSize;
-	}
-
-	inline static u32 getDataSize(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->mDataSize;
-	}
-
-	inline static bool on_cuda(const Tensor& tensor)
-	{
-		return tensor.pTensorCore->_m_on_cuda;
-	}
-	inline static bool get_need_grad(const std::shared_ptr<TensorCore>& tensor_ptr)
-	{
-		return tensor_ptr->_m_need_grad;
-	}
-	inline static void set_value(const Tensor& t, u32 index, DataType value)
-	{
-		t.pTensorCore->_m_cpu_data_address[index] = value;
-	}
-
-};
-
-
-aoba::nn::layer::LayerCore::iotype operator+(const aoba::nn::layer::LayerCore::iotype& input0, const aoba::nn::layer::LayerCore::iotype& input1);
-aoba::nn::layer::LayerCore::iotype operator+(const aoba::nn::tensor::Tensor& input0, const aoba::nn::tensor::Tensor& input1);
-
-using Layer = aoba::nn::layer::LayerCore::Layer;
-using Module = aoba::nn::layer::LayerCore;
 
 namespace aoba
 {
@@ -292,29 +213,27 @@ namespace aoba
 	{
 		namespace layer
 		{
-			template <typename T, typename ... Args>
-			LayerCore::Layer gen(Args ... args);
 
-			template <typename T, typename ... Args>
-			LayerCore::Layer gen(const char* layerName, Args ... args);
+			Layer::LayerSkeleton::iotype operator+(const Layer::LayerSkeleton::iotype& input0, const Layer::LayerSkeleton::iotype& input1);
+			Layer::LayerSkeleton::iotype operator+(const tensor::Tensor& input0, const tensor::Tensor& input1);
 		}
 	}
 }
 
-template <typename T, typename ... Args>
-Layer aoba::nn::layer::gen(Args ... args)
-{
-	LayerCore::Layer layer{};
-	layer.mLayerCore = std::make_shared<T>(args...);
-	return layer;
-}
-
-template <typename T, typename ... Args>
-Layer aoba::nn::layer::gen(const char* layerName, Args ... args)
-{
-	LayerCore::Layer layer{};
-	layer.mLayerCore = std::make_shared<T>(args...);
-	layer.mLayerName = layerName;
-	return layer;
-}
+//template <typename T, typename ... Args>
+//aoba::nn::layer::nnLayer aoba::nn::layer::gen(Args ... args)
+//{
+//	LayerCore::Layer layer{};
+//	layer.mLayerCore = std::make_shared<T>(args...);
+//	return layer;
+//}
+//
+//template <typename T, typename ... Args>
+//aoba::nn::layer::nnLayer aoba::nn::layer::gen(const char* layerName, Args ... args)
+//{
+//	LayerCore::Layer layer{};
+//	layer.mLayerCore = std::make_shared<T>(args...);
+//	layer.mLayerName = layerName;
+//	return layer;
+//}
 

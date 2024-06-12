@@ -6,6 +6,7 @@
 #include <iostream>
 #include "typeinfo.h"
 #include <cassert>
+#include "Layer/Layer.h"
 
 #define CHECK(call)                                                            \
 {                                                                              \
@@ -24,45 +25,41 @@
 #else
 #define CUDA_SYNCHRONIZE_DEBUG {}
 #endif
-//
-//class aoba::nn::layer::LayerCore;
+
+
+
 namespace aoba
 {
 	namespace nn
 	{
 		namespace layer
 		{
-			class LayerCore;
-			class AddCore;
-			class AffineCore;
-			class ReLUCore;
-			class SplitCore;
-			class L2LossCore;
-			class CrossEntropyWithSMCore;
+			class Layer;
+		}
+
+		namespace optimizer
+		{
+			class Optimizer;
+		}
+
+		namespace tensor
+		{
+			class TensorCore;
 		}
 	}
 }
-class Accessor2TensorCore;
-//class Tensor;
 
-namespace aoba { namespace nn { namespace tensor { class TensorCore; } } }
+
 
 class aoba::nn::tensor::TensorCore
 {
 public:
-	friend class Tensor;
-	friend class layer::LayerCore;
-	friend class Accessor2TensorCore;
+	friend class tensor::Tensor;
+	friend class layer::Layer;
 
 	//primitiveなクラスは速度の為に特権的にフレンドにしている。
-	friend class layer::AddCore;
-	friend class layer::AffineCore;
-	friend class layer::ReLUCore;
-	friend class layer::SplitCore;
-	friend class layer::CrossEntropyWithSMCore;
-	friend class layer::L2LossCore;
 
-
+	friend class optimizer::Optimizer;
 
 	//これは何かしら実装しないといけない。
 	TensorCore() {}
@@ -88,7 +85,7 @@ public:
 	//逆伝搬関数を呼ぶ
 	void callBackward() const;
 
-
+	bool getOnCuda() const { return _m_on_cuda; }
 
 	void setName(const std::string&);
 
@@ -150,13 +147,13 @@ private:
 
 	//親を把握しておく
 	//backwardの処理で必要。
-	std::weak_ptr<layer::LayerCore> _m_upstream_layer;
+	std::weak_ptr<layer::Layer::LayerSkeleton> _m_upstream_layer;
 	//s32 _m_location_in_upstream_layer = -1;
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
 	// 結合されたかを登録しておく。
-	std::shared_ptr<layer::LayerCore> _m_downstream_layer;
+	std::shared_ptr<layer::Layer::LayerSkeleton> _m_downstream_layer;
 	s32 _m_location_in_downstream_layer = -1;
 
 
@@ -166,7 +163,7 @@ private:
 	void synchronize_from_GPU_to_CPU();
 
 	void disconnect_bidirection();
-	void connect(const std::shared_ptr<layer::LayerCore>&, u32);
+	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
 	//識別用の名前：デバッグで使うことを想定
 	std::string _m_debug_name;
 
@@ -185,7 +182,7 @@ private:
 
 
 
-	void regist_parent_layercore(const std::shared_ptr<layer::LayerCore>&);
+	void regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
 public:
 	static void memcpyFromVector(Tensor&, const std::vector<DataType>&);
 };

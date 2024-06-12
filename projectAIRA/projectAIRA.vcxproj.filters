@@ -54,7 +54,7 @@
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp">
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
     </ClCompile>
-    <ClCompile Include="TensorNetwork\Layer\Layer.cpp">
+    <ClCompile Include="TensorNetwork\Layer\LayerSkeleton.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
@@ -115,6 +115,9 @@
     </ClInclude>
     <ClInclude Include="TensorNetwork\Optimizer\SGD.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\nnLayer.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
