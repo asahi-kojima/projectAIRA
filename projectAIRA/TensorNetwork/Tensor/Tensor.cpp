@@ -3,7 +3,7 @@
 namespace aoba::nn::tensor
 {
 	Tensor::Tensor()
-		: pTensorCore(std::make_shared<TensorCore>())
+		: pTensorCore(nullptr)
 	{
 	}
 
@@ -44,6 +44,25 @@ namespace aoba::nn::tensor
 	{
 	}
 
+	Tensor::~Tensor()
+	{
+	}
+
+	Tensor& Tensor::operator=(const Tensor& tensor_rv)
+	{
+		this->pTensorCore = tensor_rv.pTensorCore;
+		return *this;
+	}
+
+	Tensor& Tensor::operator=(Tensor&& tensor_rv)
+	{
+		this->pTensorCore = tensor_rv.pTensorCore;
+		tensor_rv.pTensorCore.reset();
+
+		return *this;
+	}
+
+
 	void Tensor::backward()
 	{
 		pTensorCore->backward_finish = true;
@@ -55,10 +74,6 @@ namespace aoba::nn::tensor
 		return pTensorCore->mDataSize;
 	}
 
-	void Tensor::setName(const std::string& name)//debug
-	{
-		pTensorCore->setName(name);
-	}
 
 
 	void Tensor::to_cuda(bool gpu_is_available)
@@ -72,6 +87,19 @@ namespace aoba::nn::tensor
 		pTensorCore->synchronize_from_GPU_to_CPU();
 	}
 
+	void Tensor::synchronize_from_CPU_to_GPU()
+	{
+		pTensorCore->synchronize_from_CPU_to_GPU();
+	}
+
+	DataType Tensor::getLoss(const Tensor& tensor)
+	{
+		if (tensor.pTensorCore->mDataSize != 1)
+		{
+			assert(0);
+		}
+		return tensor.pTensorCore->_m_cpu_data_address[0];
+	}
 
 	DataType Tensor::operator()(u32 batchSize, u32 channel, u32 height, u32 width) const
 	{
@@ -139,13 +167,6 @@ namespace aoba::nn::tensor
 		return pTensorCore->d(index);
 	}
 
-	DataType Tensor::getLoss(const Tensor& tensor)
-	{
-		if (tensor.pTensorCore->mDataSize != 1)
-		{
-			assert(0);
-		}
-		return tensor.pTensorCore->_m_cpu_data_address[0];
-	}
+
 
 }

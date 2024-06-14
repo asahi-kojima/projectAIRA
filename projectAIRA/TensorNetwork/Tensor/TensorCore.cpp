@@ -148,6 +148,11 @@ TensorCore::~TensorCore()
 void TensorCore::to_cuda(const std::string& device_name)
 {
 	//cudaを使うことを記録しておく。
+	if (_m_on_cuda)
+	{
+		//既にCUDAに転送済み。
+		return;
+	}
 	_m_on_cuda = true;
 
 
@@ -186,10 +191,6 @@ void TensorCore::regist_parent_layercore(const std::shared_ptr<layer::Layer::Lay
 	_m_upstream_layer = parent_layercore;
 	m_parent_exist = true;
 }
-
-//void TensorCore::set_parent_exist(bool parent_exist) { m_parent_exist = parent_exist; }
-
-void TensorCore::setName(const std::string& name) { _m_debug_name = name; }
 
 
 
@@ -706,6 +707,16 @@ void TensorCore::synchronize_from_GPU_to_CPU()
 	CHECK(cudaMemcpy(_m_cpu_grad_data_address, _m_gpu_grad_data_address, mDataSize * sizeof(DataType), cudaMemcpyDeviceToHost));
 	CUDA_SYNCHRONIZE_DEBUG;
 }
+
+void TensorCore::synchronize_from_CPU_to_GPU()
+{
+	if (!_m_on_cuda)
+		return;
+	CHECK(cudaMemcpy(_m_gpu_data_address,      _m_cpu_data_address,      mDataSize * sizeof(DataType), cudaMemcpyHostToDevice));
+	CHECK(cudaMemcpy(_m_gpu_grad_data_address, _m_cpu_grad_data_address, mDataSize * sizeof(DataType), cudaMemcpyHostToDevice));
+	CUDA_SYNCHRONIZE_DEBUG;
+}
+
 void TensorCore::connect(const std::shared_ptr<layer::Layer::LayerSkeleton>& layercore, u32 location)
 {
 	_m_downstream_layer = layercore;
@@ -734,10 +745,33 @@ void TensorCore::mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num)
 	pointer_on_cpu = new DataType[element_num];
 }
 
+void TensorCore::mallocAndInitOnCPU(DataType*& pointer_on_cpu, const u32 element_num, const DataType initValue)
+{
+	pointer_on_cpu = new DataType[element_num];
+	for (u32 i = 0; i < element_num; i++)
+	{
+		pointer_on_cpu[i] = initValue;
+	}
+}
+
 void TensorCore::mallocOnGPU(DataType*& pointer_on_gpu, const u32 element_num)
 {
 	CHECK(cudaMalloc((void**)(&pointer_on_gpu), element_num * sizeof(DataType)););
 	CUDA_SYNCHRONIZE_DEBUG;
+}
+
+void TensorCore::mallocAndInitOnGPU(DataType*& pointer_on_gpu, const u32 element_num, const DataType initValue)
+{
+	CHECK(cudaMalloc((void**)(&pointer_on_gpu), element_num * sizeof(DataType)););
+	CUDA_SYNCHRONIZE_DEBUG;
+	DataType* tmpMem = new DataType[element_num];
+	for (u32 i = 0; i < element_num; i++)
+	{
+		tmpMem[i] = initValue;
+	}
+	CHECK(cudaMemcpy(pointer_on_gpu, tmpMem, element_num * sizeof(DataType), cudaMemcpyHostToDevice));
+	CUDA_SYNCHRONIZE_DEBUG;
+	delete[] tmpMem;
 }
 
 void TensorCore::memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address, u32 data_size)

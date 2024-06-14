@@ -22,12 +22,14 @@ public:
 	class OptimizerSkeleton;
 	class SGD;
 	class Adam;
+
+	inline static DataType convert_loss_to_prob(DataType loss) { return exp(-loss); }
 };
 
 class aoba::nn::optimizer::Optimizer::OptimizerSkeleton
 {
 public:
-	OptimizerSkeleton(u32 learningRate);
+	OptimizerSkeleton(DataType learningRate);
 	virtual ~OptimizerSkeleton();
 
 	virtual void optimize() final;

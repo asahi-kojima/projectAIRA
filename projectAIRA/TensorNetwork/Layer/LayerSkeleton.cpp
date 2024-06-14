@@ -118,7 +118,7 @@ namespace aoba::nn::layer
 
 	void LayerSkeleton::callBackward()
 	{
-		std::cout << "call backward\n";
+		//std::cout << "call backward\n";
 		//‹t“`”À‚Ìˆ—
 		for (const auto& child_tensorcore : m_child_tensorcore_tbl)
 		{

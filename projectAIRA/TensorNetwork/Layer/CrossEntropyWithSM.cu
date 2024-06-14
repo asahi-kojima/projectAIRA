@@ -3,57 +3,107 @@
 
 namespace
 {
-	void relu_forward_cpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
+	__global__ void forward_gpu_impl_pre(
+		DataType* lossPerBatch, 
+		DataType* inference,
+		DataType* correct, 
+		const u32 batchSize, 
+		const u32 label_num)
 	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			output_ptr[i] = input0_ptr[i] + input1_ptr[i];
-		}
-	}
-
-	__global__ void relu_forward_gpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
-	{
-		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
-		if (xid >= data_size)
+		u32 N = blockIdx.x * blockDim.x + threadIdx.x;
+		if (N >= batchSize)
 		{
 			return;
 		}
 
-		output_ptr[xid] = input0_ptr[xid] + input1_ptr[xid];
-	}
+		const u32 offset = N * label_num;
 
-
-
-	void relu_backward_cpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
+		DataType max = inference[offset + 0];
+		for (u32 i = 0; i < label_num; i++)
 		{
-			if (need_grad0)
+			DataType cand = inference[offset + i];
+			if (max < cand)
 			{
-				d_input0_ptr[i] = d_output_ptr[i];
-			}
-			if (need_grad1)
-			{
-				d_input1_ptr[i] = d_output_ptr[i];
+				max = cand;
 			}
 		}
+
+		DataType sum = 0.0f;
+		for (u32 i = 0; i < label_num; i++)
+		{
+			DataType value = inference[offset + i] - max;
+			sum += std::exp(value);
+		}
+
+		u32 correct_index = static_cast<u32>(correct[N]);
+		if (correct_index >= label_num)
+		{
+			assert(0);
+		}
+
+		DataType value = std::exp(inference[offset + correct_index] - max) / sum;
+		DataType loss = -std::log(value + 1e-7);
+
+		lossPerBatch[N] = loss;
 	}
 
-	__global__ void relu_backward_gpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
+	__global__ void forward_gpu_impl_sum(
+		DataType* output , 
+		DataType* lossPerBatch, 
+		const u32 batchSize)
 	{
-		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
-		if (i >= data_size)
+		u32 N = blockIdx.x * blockDim.x + threadIdx.x;
+		DataType sum = 0.0f;
+		for (u32 N = 0; N < batchSize; N++)
+		{
+			sum += lossPerBatch[N];
+		}
+		output[0] = sum / batchSize;
+		//printf("%d | %f\n",N,  sum / batchSize);
+	}
+
+	__global__ void backward_gpu_impl(
+		DataType* d_inference, 
+		DataType* inference, 
+		DataType* correct, 
+		const u32 batchSize, 
+		const u32 label_num)
+	{
+		u32 N = blockIdx.x * blockDim.x + threadIdx.x;
+		if (N >= batchSize)
 		{
 			return;
 		}
 
-		if (need_grad0)
+		const u32 offset = N * label_num;
+
+		DataType max = inference[offset + 0];
+		for (u32 i = 0; i < label_num; i++)
 		{
-			d_input0_ptr[i] = d_output_ptr[i];
+			DataType cand = inference[offset + i];
+			if (max < cand)
+			{
+				max = cand;
+			}
 		}
-		if (need_grad1)
+
+		DataType sum = 0.0f;
+		for (u32 i = 0; i < label_num; i++)
 		{
-			d_input1_ptr[i] = d_output_ptr[i];
+			DataType value = inference[offset + i] - max;
+			sum += std::exp(value);
+		}
+
+		const u32 correct_label = static_cast<u32>(correct[N]);
+		if (correct_label >= label_num)
+		{
+			assert(0);
+		}
+
+		for (u32 I = 0; I < label_num; I++)
+		{
+			DataType value = std::exp(inference[offset + I] - max) / sum; 
+			d_inference[offset + I] = value - (correct_label == I ? 1 : 0);
 		}
 	}
 }
@@ -73,6 +123,7 @@ CrossEntropyWithSMCore::CrossEntropyWithSMCore()
 	: LayerSkeleton(2, 1, 1)
 	, m_batch_size(0)
 	, m_label_num(0)
+	, mLossPerBatch()
 {
 }
 
@@ -80,7 +131,7 @@ CrossEntropyWithSMCore::CrossEntropyWithSMCore()
 
 LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
-	const auto& inference = *getTensorCoreFrom(input_tensors[0]);
+	auto& inference = *getTensorCoreFrom(input_tensors[0]);
 	const auto& correct = *getTensorCoreFrom(input_tensors[1]);
 
 
@@ -105,11 +156,16 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
 		child_tensorcore = std::make_shared<TensorCore>(1, true);
 		child_tensorcore->regist_parent_layercore(shared_from_this());
+		child_tensorcore->d(0) = 1;
+
+		mLossPerBatch = Tensor(m_batch_size, 1, false);
 
 		if (inference._m_on_cuda)
 		{
 			m_on_cuda = true;
 			child_tensorcore->to_cuda("");
+
+			mLossPerBatch.to_cuda(true);
 		}
 
 
@@ -127,21 +183,30 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 
 
 
-	//std::cout << "CrossEntropyWithSM forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
 	if (m_on_cuda)
 	{
-		//auto input_address0 = input_tensorcore0._m_gpu_data_address;
-		//auto input_address1 = input_tensorcore1._m_gpu_data_address;
-		//auto output_address = child_tensorcore._m_gpu_data_address;
+		auto inference_address = inference._m_gpu_data_address;
+		auto correct_address = correct._m_gpu_data_address;
+		auto lossPerBatch_address = mLossPerBatch.pTensorCore->_m_gpu_data_address;
+		auto output_address = m_child_tensorcore_tbl[0]->_m_gpu_data_address;
 
-		//dim3 block(256);
-		//dim3 grid((dataSize + block.x - 1) / block.x);
-		//relu_forward_gpu_impl << <grid, block >> > (input_address0, input_address1, output_address, dataSize);
-		//CUDA_SYNCHRONIZE_DEBUG;
+		{
+			dim3 block(32);
+			dim3 grid((m_batch_size + block.x - 1) / block.x);
+			forward_gpu_impl_pre << <grid, block >> > (lossPerBatch_address, inference_address, correct_address, m_batch_size, m_label_num);
+			CUDA_SYNCHRONIZE_DEBUG;
+		}
+		{
+			dim3 block(1);
+			dim3 grid(1);
+			forward_gpu_impl_sum << <grid, block >> > (output_address, lossPerBatch_address, m_batch_size);
+			CUDA_SYNCHRONIZE_DEBUG;
+		}
+		
 	}
 	else
 	{
-		crossEntropyWithSM_forward_cpu_impl(input_tensors);
+		forward_cpu_impl(input_tensors);
 	}
 
 	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
@@ -152,33 +217,34 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 void CrossEntropyWithSMCore::backward()
 {
 	//std::cout << "CrossEntropyWithSM backward" << std::endl;
-	if (std::shared_ptr<TensorCore> input_tensor_core0 = mInputTensorCoreTbl[0].lock())
+	if (std::shared_ptr<TensorCore> inference = mInputTensorCoreTbl[0].lock())
 	{
-		if (std::shared_ptr<TensorCore> input_tensor_core1 = mInputTensorCoreTbl[1].lock())
+		if (std::shared_ptr<TensorCore> correct = mInputTensorCoreTbl[1].lock())
 		{
-			bool need_grad0 = input_tensor_core0->_m_need_grad;
-			bool need_grad1 = input_tensor_core1->_m_need_grad;
+			bool need_grad0 = inference->_m_need_grad;
+			bool need_grad1 = correct->_m_need_grad;
 			if (need_grad0 || need_grad1)/*どちらも勾配不要な状況なら逆伝搬をスキップできる*/
 			{
-
-				auto dataSize = m_child_tensorcore_tbl[0]->mDataSize;
 				if (m_on_cuda)
 				{
-					auto output_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-					auto input_address0 = input_tensor_core0->_m_gpu_grad_data_address;
-					auto input_address1 = input_tensor_core1->_m_gpu_grad_data_address;
+					auto inference_address = inference->_m_gpu_data_address;
+					auto d_inference_address = inference->_m_gpu_grad_data_address;
+					auto correct_address = correct->_m_gpu_data_address;
 
-					dim3 block(256);
-					dim3 grid((dataSize + block.x - 1) / block.x);
-					relu_backward_gpu_impl << <grid, block >> > (input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					dim3 block(32);
+					dim3 grid((m_batch_size + block.x - 1) / block.x);
+					backward_gpu_impl << <grid, block >> > (
+						d_inference_address, 
+						inference_address,
+						correct_address,
+						m_batch_size, 
+						m_label_num);
 					CUDA_SYNCHRONIZE_DEBUG;
+					//inference->synchronize_from_GPU_to_CPU();
 				}
 				else
 				{
-					auto output_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
-					auto input_address0 = input_tensor_core0->_m_cpu_grad_data_address;
-					auto input_address1 = input_tensor_core1->_m_cpu_grad_data_address;
-					relu_backward_cpu_impl(input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					backward_cpu_impl(inference, correct);
 				}
 			}
 		}
@@ -196,7 +262,7 @@ void CrossEntropyWithSMCore::backward()
 }
 
 
-void CrossEntropyWithSMCore::crossEntropyWithSM_forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
+void CrossEntropyWithSMCore::forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& inference = *getTensorCoreFrom(input_tensors[0]);
 	const auto& correct = *getTensorCoreFrom(input_tensors[1]);
@@ -220,14 +286,52 @@ void CrossEntropyWithSMCore::crossEntropyWithSM_forward_cpu_impl(const LayerSkel
 		for (u32 i = 0; i < m_label_num; i++)
 		{
 			DataType value = inference(N, i) - max;
-			sum += exp(value);
+			sum += std::exp(value);
 		}
 
 		u32 correct_index = static_cast<u32>(correct(N));
-		DataType loss = -log(exp(inference(N, correct_index) - max) / sum + 1e-7);
+		if (correct_index >= m_label_num)
+		{
+			assert(0);
+		}
+		DataType value = std::exp(inference(N, correct_index) - max) / sum;
+		DataType loss = -std::log(value + 1e-7);
 		result += loss;
+		mLossPerBatch(N) = loss;//これは正直必要ない。GPUとパラレルにしたかった為。消してもOK。
 	}
 
-	output(0) = result / (m_batch_size * m_label_num);
+	output(0) = result / (m_batch_size);
 }
 
+void  CrossEntropyWithSMCore::backward_cpu_impl(const std::shared_ptr<TensorCore>& pInferenceData, const std::shared_ptr<TensorCore>& pCorrectData)
+{
+	auto& inferenceData = *pInferenceData;
+	const auto& correctData = *pCorrectData;
+
+	for (u32 N = 0; N < m_batch_size; N++)
+	{
+		DataType max = inferenceData(N, 0);
+		for (u32 i = 0; i < m_label_num; i++)
+		{
+			DataType cand = inferenceData(N, i);
+			if (max < cand)
+			{
+				max = cand;
+			}
+		}
+
+		DataType sum = 0.0f;
+		for (u32 i = 0; i < m_label_num; i++)
+		{
+			DataType value = inferenceData(N, i) - max;
+			sum += exp(value);
+		}
+
+		const u32 correct_label = static_cast<u32>(correctData(N));
+
+		for (u32 I = 0; I < m_label_num; I++)
+		{
+			inferenceData.d(N, I) = exp(inferenceData(N, I) - max) / sum - (correct_label == I ? 1 : 0);
+		}
+	}
+}

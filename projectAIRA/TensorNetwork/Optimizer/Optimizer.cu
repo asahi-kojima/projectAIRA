@@ -3,7 +3,7 @@
 using OptimizerSkeleton = aoba::nn::optimizer::Optimizer::OptimizerSkeleton;
 
 
-OptimizerSkeleton::OptimizerSkeleton(u32 learningRate)
+OptimizerSkeleton::OptimizerSkeleton(DataType learningRate)
 	:mLearningRate(learningRate)
 	, m_OptimizeScheduled_LayerCore_tbl(0)
 	//, mLinkedParameters(nullptr)
@@ -50,35 +50,4 @@ void OptimizerSkeleton::optimize()
 	}
 
 	optimize_unique();
-
-	//while (true)
-	//{
-	//	if (current)
-	//	{
-	//		if (const std::shared_ptr<TensorCore>& tensorcore_as_shared = current->parameter.lock())
-	//		{
-	//			optimize_unique();
-
-	//			old = current;
-	//			current = current->next;
-	//		}
-	//		else
-	//		{
-	//			std::cout << "Resource unlock" << std::endl;
-	//			if (old)
-	//			{
-	//				old->next = current->next;
-	//				auto tmp = current;
-	//				current = current->next;
-	//				delete tmp;
-	//			}
-	//		}
-
-
-	//	}
-	//	else
-	//	{
-	//		break;
-	//	}
-	//}
 }

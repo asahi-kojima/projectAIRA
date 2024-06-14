@@ -119,6 +119,9 @@
     <ClInclude Include="TensorNetwork\Layer\nnLayer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
+    <ClInclude Include="common\helper.h">
+      <Filter>ヘッダー ファイル\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">

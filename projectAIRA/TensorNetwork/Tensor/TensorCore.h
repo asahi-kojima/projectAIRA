@@ -87,7 +87,6 @@ public:
 
 	bool getOnCuda() const { return _m_on_cuda; }
 
-	void setName(const std::string&);
 
 
 	DataType  operator()(u32, u32, u32, u32) const;
@@ -161,7 +160,7 @@ private:
 	/*1111111111111111111111111111111111111111111111111111111111111111111*/
 
 	void synchronize_from_GPU_to_CPU();
-
+	void synchronize_from_CPU_to_GPU();
 	void disconnect_bidirection();
 	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
 	//識別用の名前：デバッグで使うことを想定
@@ -175,8 +174,10 @@ private:
 	void cuda_free(DataType* p);
 
 	void mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num);
+	void mallocAndInitOnCPU(DataType*& pointer_on_cpu, const u32 element_num, const DataType initValue = 0.0f);
 
 	void mallocOnGPU(DataType*& pointer_on_gpu, const u32 element_num);
+	void mallocAndInitOnGPU(DataType*& pointer_on_gpu, const u32 element_num, const DataType initValue = 0.0f);
 
 	void memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address, u32 data_size);
 

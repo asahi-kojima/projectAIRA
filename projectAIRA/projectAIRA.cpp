@@ -9,10 +9,12 @@
 #include "Layer/Add.h"
 #include "Layer/AddAsInner.h"
 #include "Layer/ReLU.h"
+#include "Layer/Affine.h"
 #include "Layer/Sequential.h"
 #include "Layer/CrossEntropyWithSM.h"
 #include "gpu-manager.h"
 #include "Optimizer/SGD.h"
+#include "helper.h"
 
 using namespace aoba::nn;
 using namespace layer;
@@ -100,6 +102,15 @@ void init(Tensor& t, DataType value)
 		t(i) = value;
 	}
 }
+
+void init_grad(Tensor& t, DataType value)
+{
+	for (u32 i = 0; i < t.getDataSize(); i++)
+	{
+		t.d(i) = value;
+	}
+}
+
 
 void init_linear(Tensor& t, DataType value)
 {
@@ -332,17 +343,66 @@ int main()
 	//	}
 	//}
 
+	//
+	//{
+	//	auto affine4GPU = Affine(100);
+	//	auto affine4CPU = Affine(100);
+
+	//	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
+	//	init(testTensor4GPU, 1);
+	//	testTensor4GPU.to_cuda(true);
+	//	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
+	//	init(testTensor4CPU, 1);
+
+	//	auto outCPU = affine4CPU(testTensor4CPU);
+	//	auto outGPU = affine4GPU(testTensor4GPU);
+	//	outGPU[0].synchronize_from_GPU_to_CPU();
+
+	//	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	//	{
+	//		auto cpuValue = outCPU[0](i);
+	//		auto gpuValue = outGPU[0](i);
+	//		auto diff = abs(cpuValue - gpuValue) / abs(cpuValue);
+	//		std::cout << (diff) << std::endl;
+	//	}
+
+	//	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	//	{
+	//		outCPU[0].d(i) = 1;
+	//		outGPU[0].d(i) = 1;
+	//	}
+	//	outGPU[0].synchronize_from_CPU_to_GPU();
+
+	//	outCPU[0].backward();
+	//	outGPU[0].backward();
+
+	//	testTensor4GPU.synchronize_from_GPU_to_CPU();
+	//	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
+	//	{
+	//		auto cpuValue = testTensor4CPU.d(i);
+	//		auto gpuValue = testTensor4GPU.d(i);
+	//		auto diff = abs(cpuValue - gpuValue) / abs(cpuValue);
+	//		std::cout << (diff) << std::endl;
+	//	}
+	//}
+	//return 1;
+
 	////テスト8
 	{
-		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		auto seq = Sequential(Affine(100), ReLU(), Affine(10));
+		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(100), ReLU(), Affine(10));
+
+		//auto affine0 = Affine(100);
+		//auto relu = ReLU();
+		//auto affine1 = Affine(10);
+
 		auto lossFunc = CrossEntropyWithSM();
-		auto optim = Optimizer::SGD(0.1f * 10);
+		auto optim = Optimizer::SGD(0.001f);
 		optim(seq);
 		std::cout << "===============================" << std::endl;
 		std::cout << "Test8" << std::endl;
 		std::cout << "===============================" << std::endl;
-
+#if 0
 		for (u32 i = 0; i < 1000; i++)
 		{
 			std::cout << "-------------------------------" << std::endl;
@@ -354,11 +414,55 @@ int main()
 				Tensor& correct_tensor = correct_tensor_tbl[Bn]; //correct_tensor.to_cuda("");
 				auto t = seq(training_tensor);
 				auto loss = lossFunc(t[0], correct_tensor);
-				std::cout << Tensor::getLoss(loss[0]) << std::endl;
+				auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
+				std::cout << prob * 100 << std::endl;
 				loss[0].backward();
 				optim.optimize();
+	}
+}
+#else
+		
+		for (u32 i = 0; i < 1000; i++)
+		{
+			std::cout << "-------------------------------" << std::endl;
+			std::cout << "Loop : " << i << std::endl;
+			std::cout << "-------------------------------" << std::endl;
+			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
+			{
+				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(true);
+				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(true);
+				auto t = seq(training_tensor);
+				auto loss = lossFunc(t[0], correct_tensor);
+				loss[0].synchronize_from_GPU_to_CPU();
+				auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
+				//std::cout << prob * 100 << std::endl;
+				loss[0].backward();
+				optim.optimize();
+
+				progressBar(Bn, batched_data_num, prob*100);
 			}
+			std::cout << std::endl;
 		}
+#endif
+	}
+
+	////テスト9
+	{
+		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		auto relu = Affine(10);
+		auto lossFunc = CrossEntropyWithSM();
+		std::cout << "===============================" << std::endl;
+		std::cout << "Test8" << std::endl;
+		std::cout << "===============================" << std::endl;
+
+		Tensor t(10, 100, true);
+		Tensor correct(10, 10, true);
+		init_normal(t);
+		init(correct, 1);
+		auto output = relu(t);
+		auto loss = lossFunc(output[0], correct);
+		//init_grad(output[0], 1);
+		loss[0].backward();
 
 	}
 	std::cout << "free check" << std::endl;

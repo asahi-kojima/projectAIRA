@@ -6,114 +6,134 @@ namespace
 
 
 	__global__ void affine_forward_gpu_impl(
-		f32* y, 
-		f32* x, 
+		f32* y,
+		f32* x,
 		f32* A,
-		f32* b, 
-		u32 batchSize, u32 outputSize, u32 inputSize)
+		f32* b,
+		u32 batchSize,
+		u32 outputSize,
+		u32 inputSize)
 	{
-		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
-		u32 yid = blockIdx.y * blockDim.y + threadIdx.y;
-		if (xid >= outputSize || yid >= batchSize)
+		u32 O = blockIdx.x * blockDim.x + threadIdx.x;
+		u32 N = blockIdx.y * blockDim.y + threadIdx.y;
+		if (O >= outputSize || N >= batchSize)
 		{
 			return;
 		}
-		u32 id = yid * outputSize + xid;
+
+		u32 index = N * outputSize + O;
+
 		f32 result = 0.0f;
-		for (u32 i = 0; i < inputSize; i++)
+		for (u32 I = 0; I < inputSize; I++)
 		{
-			result += A[xid * inputSize + i] * x[yid * inputSize + i];
+			result += A[O * inputSize + I] * x[N * inputSize + I];
 		}
-		y[id] = result + b[xid];
+
+		y[index] = result + b[O];
 	}
 
 	__global__ void affine_backward_gpu_impl_input(
-		DataType* dOut, 
-		DataType* dIn, 
-		DataType* A, 
+		DataType* dOut,
+		DataType* dIn,
+		DataType* A,
 		u32 batchSize, u32 outputSize, u32 inputSize)
 	{
-		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;//input
-		u32 yid = blockIdx.y * blockDim.y + threadIdx.y;//batch
+		u32 I = blockIdx.x * blockDim.x + threadIdx.x;//input
+		u32 N = blockIdx.y * blockDim.y + threadIdx.y;//batch
 
-		if (xid >= inputSize || yid >= batchSize)
+		if (I >= inputSize || N >= batchSize)
 		{
 			return;
 		}
 
-		f32 result = 0.0f;
-		for (u32 i = 0; i < outputSize; i++)
+		DataType result = 0.0f;
+		for (u32 O = 0; O < outputSize; O++)
 		{
-#if INDEX_DEBUG
-			if (i * inputSize + xid >= outputSize * inputSize)
+#ifdef _DEBUG
+			if (O * inputSize + I >= outputSize * inputSize)
 			{
 				assert(0);
 			}
-			if (yid * outputSize + i >= batchSize * outputSize)
+			if (N * outputSize + O >= batchSize * outputSize)
 			{
 				assert(0);
 			}
 #endif
-			result += A[i * inputSize + xid] * dIn[yid * outputSize + i];
+			result += A[O * inputSize + I] * dIn[N * outputSize + O];
+			//printf("A[%d, %d] = %f\n", O, I, A[O * inputSize + I]);
+			//printf("DI[%d, %d] = %f\n", N, O, dIn[N * outputSize + O]);
 		}
-		dOut[yid * inputSize + xid] = result;
+		dOut[N * inputSize + I] = result;
 	}
 
-	__global__ void affine_backward_gpu_impl_weight(DataType* dA, DataType* dout, DataType* input, u32 batchSize, u32 outputSize, u32 inputSize)
+	//Weightパラメータ
+	__global__ void affine_backward_gpu_impl_weight(
+		DataType* dA,
+		DataType* dout,
+		DataType* input,
+		u32 batchSize,
+		u32 outputSize,
+		u32 inputSize)
 	{
-		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
-		u32 yid = blockIdx.y * blockDim.y + threadIdx.y;
-		if (xid >= inputSize || yid >= outputSize)
+		u32 I = blockIdx.x * blockDim.x + threadIdx.x;
+		u32 O = blockIdx.y * blockDim.y + threadIdx.y;
+		if (I >= inputSize || O >= outputSize)
 		{
 			return;
 		}
 
-		u32 id = yid * inputSize + xid;
+		u32 id = O * inputSize + I;
 
-		f32 result = 0.0f;
+		DataType result = 0.0f;
 		for (u32 N = 0; N < batchSize; N++)
 		{
 #if INDEX_DEBUG
-			if (N * inputSize + xid >= batchSize * inputSize)
+			if (N * inputSize + I >= batchSize * inputSize)
 			{
 				assert(0);
 			}
-			if (N * outputSize + yid >= batchSize * outputSize)
+			if (N * outputSize + O >= batchSize * outputSize)
 			{
 				assert(0);
 			}
 #endif
-			result += dout[N * outputSize + yid] * input[N * inputSize + xid];
+			result += dout[N * outputSize + O] * input[N * inputSize + I];
 		}
 
 		dA[id] = result;
 	}
 
-	__global__ void affine_backward_gpu_impl_bias(DataType* dBias, DataType* dout, u32 batchSize, u32 outputSize)
+	//Biasパラメータ
+	__global__ void affine_backward_gpu_impl_bias(
+		DataType* dBias,
+		DataType* output_grad,
+		u32 batchSize,
+		u32 outputSize)
 	{
-		u32 id = blockIdx.x * blockDim.x + threadIdx.x;
-		if (id >= outputSize)
+		u32 O = blockIdx.x * blockDim.x + threadIdx.x;
+		if (O >= outputSize)
 		{
 			return;
 		}
-		f32 result = 0.0f;
+
+		DataType result = 0.0f;
 		for (u32 N = 0; N < batchSize; N++)
 		{
 #if INDEX_DEBUG
-			if ((N * outputSize + id) >= batchSize * outputSize)
+			if ((N * outputSize + O) >= batchSize * outputSize)
 			{
 				assert(0);
 			}
 #endif
-			result += dout[N * outputSize + id];
+			result += output_grad[N * outputSize + O];
 		}
 #if INDEX_DEBUG
-		if (id >= outputSize)
+		if (O >= outputSize)
 		{
 			assert(0);
 		}
 #endif
-		dBias[id] = result;
+		dBias[O] = result;
 	}
 }
 
@@ -131,11 +151,12 @@ Layer::nnLayer aoba::nn::layer::Affine(u32 output_size)
 
 
 
-AffineCore::AffineCore(u32 output_size)
+AffineCore::AffineCore(u32 output_size, DataType affineWeight)
 	:LayerSkeleton(1, 1, 1, 2)
 	, m_batch_size(0)
 	, m_input_size(0)
 	, m_output_size(output_size)
+	, mAffineWeight(affineWeight)
 {
 }
 
@@ -159,7 +180,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 
 		auto& weight = m_parameter_tbl[0];
 		auto& bias = m_parameter_tbl[1];
-		weight = std::make_shared<TensorCore>(m_output_size, input_tensorcore.mCHW, true);
+		weight = std::make_shared<TensorCore>(m_output_size, m_input_size, true);
 		bias = std::make_shared<TensorCore>(m_output_size, true);
 
 		{
@@ -168,7 +189,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 			std::normal_distribution<> dist(0.0f, std::sqrt(2.0f / m_input_size));
 			for (u32 i = 0; i < weight->mDataSize; i++)
 			{
-				weight->_m_cpu_data_address[i] = affineWeight * static_cast<DataType>(dist(engine));
+				weight->_m_cpu_data_address[i] = mAffineWeight * static_cast<DataType>(dist(engine));
 			}
 			for (u32 i = 0; i < bias->mDataSize; i++)
 			{
@@ -230,7 +251,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 		}
 		else
 		{
-			affine_forward_cpu_impl(input_tensors);
+			forward_cpu_impl(input_tensors);
 		}
 	}
 
@@ -248,6 +269,7 @@ void AffineCore::backward()
 		auto output_grad_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
 		auto input_address = input_tensorcore->_m_gpu_data_address;
 		auto input_grad_address = input_tensorcore->_m_gpu_grad_data_address;
+		auto weight_address = m_parameter_tbl[0]->_m_gpu_data_address;
 		auto weight_grad_address = m_parameter_tbl[0]->_m_gpu_grad_data_address;
 		auto bias_grad_address = m_parameter_tbl[1]->_m_gpu_grad_data_address;
 
@@ -267,23 +289,24 @@ void AffineCore::backward()
 						m_batch_size,
 						m_output_size,
 						m_input_size);
+					CUDA_SYNCHRONIZE_DEBUG;
 				}
 
 				//Bias
 				{
 					dim3 block(16);
 					dim3 grid((m_output_size + block.x - 1) / block.x);
-					affine_backward_gpu_impl_bias << <grid, block >> >(
+					affine_backward_gpu_impl_bias << <grid, block >> > (
 						bias_grad_address,
 						output_grad_address,
 						m_batch_size,
 						m_output_size);
+					CUDA_SYNCHRONIZE_DEBUG;
 				}
-				CUDA_SYNCHRONIZE_DEBUG;
 			}
 			else
 			{
-				affine_backward_cpu_impl_parameter(input_tensorcore);
+				backward_cpu_impl_parameter(input_tensorcore);
 			}
 		}
 
@@ -297,7 +320,7 @@ void AffineCore::backward()
 				affine_backward_gpu_impl_input << <grid, block >> > (
 					input_grad_address,
 					output_grad_address,
-					weight_grad_address,
+					weight_address,
 					m_batch_size,
 					m_output_size,
 					m_input_size);
@@ -305,7 +328,7 @@ void AffineCore::backward()
 			}
 			else
 			{
-				affine_backward_cpu_impl_input(input_tensorcore);
+				backward_cpu_impl_input(input_tensorcore);
 			}
 		}
 	}
@@ -318,7 +341,7 @@ void AffineCore::backward()
 
 
 
-void AffineCore::affine_forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
+void AffineCore::forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input = *getTensorCoreFrom(input_tensors[0]);
 	auto& output = *m_child_tensorcore_tbl[0];
@@ -329,7 +352,6 @@ void AffineCore::affine_forward_cpu_impl(const LayerSkeleton::iotype& input_tens
 	{
 		for (u32 O = 0; O < m_output_size; O++)
 		{
-			u32 index = N * m_output_size + O;
 			DataType result = 0.0f;
 			for (u32 I = 0; I < m_input_size; I++)
 			{
@@ -341,7 +363,7 @@ void AffineCore::affine_forward_cpu_impl(const LayerSkeleton::iotype& input_tens
 	}
 }
 
-void AffineCore::affine_backward_cpu_impl_input(const std::shared_ptr<TensorCore>& input_tensorcore)
+void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
 	const auto& output = *m_child_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;
@@ -362,7 +384,7 @@ void AffineCore::affine_backward_cpu_impl_input(const std::shared_ptr<TensorCore
 	}
 }
 
-void AffineCore::affine_backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>& input_tensorcore)
+void AffineCore::backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
 	const auto& output = *m_child_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;

@@ -16,7 +16,7 @@ class aoba::nn::optimizer::Optimizer::SGD : public aoba::nn::optimizer::Optimize
 {
 
 public:
-	SGD(u32 learningRate);
+	SGD(DataType learningRate);
 	~SGD();
 
 	virtual void initialize() override;

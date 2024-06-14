@@ -112,7 +112,7 @@ protected:
 	const u32 m_input_tensor_num;
 	const u32 m_output_tensor_num;
 
-
+	//void init_childtensor_with(std::shared_ptr<Layer::LayerSkeleton>&& )
 
 
 

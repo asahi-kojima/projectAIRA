@@ -140,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="common\debug-setting.h" />
     <ClInclude Include="common\gpu-manager.h" />
+    <ClInclude Include="common\helper.h" />
     <ClInclude Include="common\typeinfo.h" />
     <ClInclude Include="TensorNetwork\Layer\Add.h" />
     <ClInclude Include="TensorNetwork\Layer\AddAsInner.h" />
