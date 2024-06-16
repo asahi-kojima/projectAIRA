@@ -13,7 +13,8 @@ namespace aoba::nn::layer
 		, m_parameter_tbl(0)
 		, m_child_tensorcore_tbl(0)
 		, mlayer(m_internal_layer_tbl)
-		//, m_downstream_tensor_backward_finish(0)
+
+		, m_downstream_backward_checkTbl(output_tensor_num)
 	{
 	}
 
@@ -24,6 +25,8 @@ namespace aoba::nn::layer
 		, m_parameter_tbl(0)
 		, m_child_tensorcore_tbl(child_tensorcore_num)
 		, mlayer(m_internal_layer_tbl)
+
+		, m_downstream_backward_checkTbl(output_tensor_num)
 	{
 	}
 
@@ -34,6 +37,8 @@ namespace aoba::nn::layer
 		, m_parameter_tbl(parameter_num)
 		, m_child_tensorcore_tbl(child_tensorcore_num)
 		, mlayer(m_internal_layer_tbl)
+
+		, m_downstream_backward_checkTbl(output_tensor_num)
 	{
 	}
 
@@ -100,35 +105,38 @@ namespace aoba::nn::layer
 				tensorcore->connect(shared_from_this(), i);
 			}
 
-			//初期化が済んでいない場合、これを呼ぶとリソースエラーになる。
-			//ただし、初期化が済んでない場合には以下のforward内部でリソースが確保され、同時にbackward_finishの
-			//フラグはfalseに設定されるので、ロジック的にはここでfalseにしているのと同じになっている。
-			if (m_init_finish)
+			
+			for (u32 i = 0; i < m_output_tensor_num; i++)
 			{
-				for (const auto& child_tensorcore : m_child_tensorcore_tbl)
-				{
-					child_tensorcore->backward_finish = false;
-				}
+				m_downstream_backward_checkTbl[i] = false;
 			}
-
 		}
 		//各層毎の順伝搬を実際に実行する。
 		return forward(input_tensors);
 	}
 
-	void LayerSkeleton::callBackward()
+	void LayerSkeleton::callBackward(u32 downstream_index)
 	{
-		//std::cout << "call backward\n";
-		//逆伝搬の処理
-		for (const auto& child_tensorcore : m_child_tensorcore_tbl)
 		{
-			if (!child_tensorcore->backward_finish)
+			if (downstream_index >= m_output_tensor_num)
 			{
-				return;
+				assert(0);
 			}
+
+			m_downstream_backward_checkTbl[downstream_index] = true;
+
+			//逆伝搬の処理
+			for (bool backward_finish : m_downstream_backward_checkTbl)
+			{
+				if (!backward_finish)
+				{
+					return;
+				}
+			}
+
+			backward();
 		}
 
-		backward();
 
 
 		//上流へ逆伝搬の指示を送る

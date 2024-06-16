@@ -56,27 +56,27 @@ class aoba::nn::tensor::TensorCore
 public:
 	friend class tensor::Tensor;
 	friend class layer::Layer;
-
-	//primitiveなクラスは速度の為に特権的にフレンドにしている。
-
 	friend class optimizer::Optimizer;
 
-	//これは何かしら実装しないといけない。
-	TensorCore() {}
 
-	TensorCore(const TensorCore& tensorcore, bool need_grad = false);
-
+	/// <summary>
+	/// 全てのメンバ変数を未初期化の状態に留める。
+	/// </summary>
+	TensorCore();
+	TensorCore(const TensorCore& tensorcore, bool need_grad = false);//要再検討：メモリをどこまでコピーするか
 	TensorCore(u32 width, bool need_grad = false);
-
 	TensorCore(u32 batchSize, u32 width, bool need_grad = false);
-
 	TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad = false);
-
 	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
-
-	//TensorCore(Dimension, u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
-
 	virtual ~TensorCore();
+
+	TensorCore& operator=(TensorCore&& tensorcore);
+
+	void resetShapeAs(u32 width);
+	void resetShapeAs(u32 batchSize, u32 width);
+	void resetShapeAs(u32 batchSize, u32 height, u32 width);
+	void resetShapeAs(u32 batchSize, u32 channel, u32 height, u32 width);
+
 
 	//テンソルのデータをGPUに転送する。
 	//GPU上のメモリ確保＆転送
@@ -85,7 +85,7 @@ public:
 	//逆伝搬関数を呼ぶ
 	void callBackward() const;
 
-	bool getOnCuda() const { return _m_on_cuda; }
+
 
 
 
@@ -112,22 +112,21 @@ private:
 		//形状に関する変数
 	enum class Dimension
 	{
-		dim0,
+		dim0,//未初期化（デフォルトコンストラクタ呼び出し）の場合のみこれに該当
 		dim1,
 		dim2,
 		dim3,
 		dim4,
 	};
 
-	bool shape_already_set = false;/*形状を設定したかどうか*/
 	Dimension mDimension;/*何次元データかを表現*/
 	u32 mBatchSize;/*バッチサイズ*/
 	u32 mChannel;/*チャンネル数*/
 	u32 mHeight;/*高さ*/
 	u32 mWidth;/*横幅*/
 	u32 mDataSize;/*テンソルのデータサイズ*/
-	u32 mCHW;
-	u32 mHW;
+	u32 mCHW;/*チャンネル×高さ×横幅*/
+	u32 mHW;/*高さ×横幅*/
 
 
 	//CPU/GPUリソースに関する変数
@@ -144,10 +143,10 @@ private:
 	//NN層とテンソルの連結に関する変数
 	bool m_parent_exist = false;/*層に紐づく場合のみtrueになり、かつその場合のみ、逆伝搬が走る。*/
 
-	//親を把握しておく
+	//親(上流層)を把握しておく
 	//backwardの処理で必要。
 	std::weak_ptr<layer::Layer::LayerSkeleton> _m_upstream_layer;
-	//s32 _m_location_in_upstream_layer = -1;
+	s32 _m_location_in_upstream_layer = -1;
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
@@ -156,15 +155,14 @@ private:
 	s32 _m_location_in_downstream_layer = -1;
 
 
-	bool backward_finish = false;
 	/*1111111111111111111111111111111111111111111111111111111111111111111*/
 
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
 	void disconnect_bidirection();
 	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
-	//識別用の名前：デバッグで使うことを想定
-	std::string _m_debug_name;
+	void regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
+
 
 
 
@@ -183,7 +181,6 @@ private:
 
 
 
-	void regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
 public:
 	static void memcpyFromVector(Tensor&, const std::vector<DataType>&);
 };

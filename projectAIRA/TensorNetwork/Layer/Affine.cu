@@ -176,6 +176,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
 		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore.mBatchSize, m_output_size, true);
+		child_tensorcore->_m_location_in_upstream_layer = 0;
 		child_tensorcore->regist_parent_layercore(shared_from_this());
 
 		auto& weight = m_parameter_tbl[0];

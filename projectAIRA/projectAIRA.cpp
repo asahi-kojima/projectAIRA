@@ -143,6 +143,115 @@ void confirm(const Tensor& tensor)
 		v[i] = tensor(i);
 	}
 }
+
+void check_Affine()
+{
+	std::cout << "Affine Debug" << std::endl;
+	auto affine4GPU = Affine(100);
+	auto affine4CPU = Affine(100);
+
+	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4GPU, 1);
+	testTensor4GPU.to_cuda(true);
+	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4CPU, 1);
+
+	auto outGPU = affine4GPU(testTensor4GPU);
+	auto outCPU = affine4CPU(testTensor4CPU);
+	outGPU[0].synchronize_from_GPU_to_CPU();
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		auto cpuValue = outCPU[0](i);
+		auto gpuValue = outGPU[0](i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		outCPU[0].d(i) = 1;
+		outGPU[0].d(i) = 1;
+	}
+	outGPU[0].synchronize_from_CPU_to_GPU();
+
+	outCPU[0].backward();
+	outGPU[0].backward();
+
+	testTensor4GPU.synchronize_from_GPU_to_CPU();
+	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
+	{
+		auto cpuValue = testTensor4CPU.d(i);
+		auto gpuValue = testTensor4GPU.d(i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+}
+
+void check_ReLU()
+{
+	std::cout << "ReLU Debug" << std::endl;
+	auto relu4GPU = ReLU();
+	auto relu4CPU = ReLU();
+
+	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4GPU, 1);
+	testTensor4GPU.to_cuda(true);
+	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4CPU, 1);
+
+	auto outGPU = relu4GPU(testTensor4GPU);
+	auto outCPU = relu4CPU(testTensor4CPU);
+	outGPU[0].synchronize_from_GPU_to_CPU();
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		auto cpuValue = outCPU[0](i);
+		auto gpuValue = outGPU[0](i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+		
+	}
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		outCPU[0].d(i) = 1;
+		outGPU[0].d(i) = 1;
+	}
+	outGPU[0].synchronize_from_CPU_to_GPU();
+
+	outCPU[0].backward();
+	outGPU[0].backward();
+
+	testTensor4GPU.synchronize_from_GPU_to_CPU();
+	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
+	{
+		auto cpuValue = testTensor4CPU.d(i);
+		auto gpuValue = testTensor4GPU.d(i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+}
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
 
 class MyLayer : public nnModule
@@ -344,49 +453,9 @@ int main()
 	//}
 
 	//
-	//{
-	//	auto affine4GPU = Affine(100);
-	//	auto affine4CPU = Affine(100);
-
-	//	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
-	//	init(testTensor4GPU, 1);
-	//	testTensor4GPU.to_cuda(true);
-	//	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
-	//	init(testTensor4CPU, 1);
-
-	//	auto outCPU = affine4CPU(testTensor4CPU);
-	//	auto outGPU = affine4GPU(testTensor4GPU);
-	//	outGPU[0].synchronize_from_GPU_to_CPU();
-
-	//	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
-	//	{
-	//		auto cpuValue = outCPU[0](i);
-	//		auto gpuValue = outGPU[0](i);
-	//		auto diff = abs(cpuValue - gpuValue) / abs(cpuValue);
-	//		std::cout << (diff) << std::endl;
-	//	}
-
-	//	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
-	//	{
-	//		outCPU[0].d(i) = 1;
-	//		outGPU[0].d(i) = 1;
-	//	}
-	//	outGPU[0].synchronize_from_CPU_to_GPU();
-
-	//	outCPU[0].backward();
-	//	outGPU[0].backward();
-
-	//	testTensor4GPU.synchronize_from_GPU_to_CPU();
-	//	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
-	//	{
-	//		auto cpuValue = testTensor4CPU.d(i);
-	//		auto gpuValue = testTensor4GPU.d(i);
-	//		auto diff = abs(cpuValue - gpuValue) / abs(cpuValue);
-	//		std::cout << (diff) << std::endl;
-	//	}
-	//}
-	//return 1;
-
+	check_Affine();
+	check_ReLU();
+	return 1;
 	////テスト8
 	{
 		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
@@ -418,10 +487,10 @@ int main()
 				std::cout << prob * 100 << std::endl;
 				loss[0].backward();
 				optim.optimize();
-	}
-}
+			}
+		}
 #else
-		
+
 		for (u32 i = 0; i < 1000; i++)
 		{
 			std::cout << "-------------------------------" << std::endl;
@@ -439,7 +508,7 @@ int main()
 				loss[0].backward();
 				optim.optimize();
 
-				progressBar(Bn, batched_data_num, prob*100);
+				progressBar(Bn, batched_data_num, prob * 100);
 			}
 			std::cout << std::endl;
 		}
@@ -464,9 +533,9 @@ int main()
 		//init_grad(output[0], 1);
 		loss[0].backward();
 
-	}
+		}
 	std::cout << "free check" << std::endl;
-}
+	}
 
 
 //例えばこんなことをやりたい。

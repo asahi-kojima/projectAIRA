@@ -13,9 +13,24 @@ namespace
 
 using TensorCore = aoba::nn::tensor::TensorCore;
 
+TensorCore::TensorCore()
+	: mDimension(Dimension::dim0)
+	, mBatchSize(0)
+	, mChannel(0)
+	, mHeight(0)
+	, mWidth(0)
+	, mDataSize(0)
+	, mCHW(0)
+	, mHW(0)
+
+	, _m_need_grad(false)
+	, _m_on_cuda(false)
+
+{
+}
+
 TensorCore::TensorCore(const TensorCore& tensorcore, bool need_grad)
-	: shape_already_set(tensorcore.shape_already_set)
-	, mDimension(tensorcore.mDimension)
+	: mDimension(tensorcore.mDimension)
 	, mBatchSize(tensorcore.mBatchSize)
 	, mChannel(tensorcore.mChannel)
 	, mHeight(tensorcore.mHeight)
@@ -27,7 +42,6 @@ TensorCore::TensorCore(const TensorCore& tensorcore, bool need_grad)
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
 
-	, backward_finish(false)
 {
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
 	if (need_grad)
@@ -37,8 +51,7 @@ TensorCore::TensorCore(const TensorCore& tensorcore, bool need_grad)
 }
 
 TensorCore::TensorCore(u32 width, bool need_grad)
-	: shape_already_set(true)
-	, mDimension(Dimension::dim1)
+	: mDimension(Dimension::dim1)
 	, mBatchSize(1)
 	, mChannel(1)
 	, mHeight(1)
@@ -50,7 +63,6 @@ TensorCore::TensorCore(u32 width, bool need_grad)
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
 
-	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -61,8 +73,7 @@ TensorCore::TensorCore(u32 width, bool need_grad)
 }
 
 TensorCore::TensorCore(u32 batchSize, u32 width, bool need_grad)
-	: shape_already_set(true)
-	, mDimension(Dimension::dim2)
+	: mDimension(Dimension::dim2)
 	, mBatchSize(batchSize)
 	, mChannel(1)
 	, mHeight(1)
@@ -74,7 +85,6 @@ TensorCore::TensorCore(u32 batchSize, u32 width, bool need_grad)
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
 
-	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -85,8 +95,7 @@ TensorCore::TensorCore(u32 batchSize, u32 width, bool need_grad)
 }
 
 TensorCore::TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad)
-	: shape_already_set(true)
-	, mDimension(Dimension::dim3)
+	: mDimension(Dimension::dim3)
 	, mBatchSize(batchSize)
 	, mChannel(1)
 	, mHeight(height)
@@ -98,7 +107,6 @@ TensorCore::TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad)
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
 
-	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -109,8 +117,7 @@ TensorCore::TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad)
 }
 
 TensorCore::TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad)
-	: shape_already_set(true)
-	, mDimension(Dimension::dim4)
+	: mDimension(Dimension::dim4)
 	, mBatchSize(batchSize)
 	, mChannel(channel)
 	, mHeight(height)
@@ -122,7 +129,6 @@ TensorCore::TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool n
 	, _m_need_grad(need_grad)
 	, _m_on_cuda(false)
 
-	, backward_finish(false)
 {
 	//データサイズが上で確定したので、それに従って確保する。
 	mallocOnCPU(_m_cpu_data_address, mDataSize);
@@ -133,14 +139,72 @@ TensorCore::TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool n
 }
 
 
-
-
 TensorCore::~TensorCore()
 {
 	deleteArrayAddress(_m_cpu_data_address);
-	cuda_free(_m_gpu_data_address);
 	deleteArrayAddress(_m_cpu_grad_data_address);
+	cuda_free(_m_gpu_data_address);
 	cuda_free(_m_gpu_grad_data_address);
+}
+
+TensorCore& TensorCore::operator=(TensorCore&& tensorcore)
+{
+	mDimension = tensorcore.mDimension;
+	mBatchSize = tensorcore.mBatchSize;
+	mChannel = tensorcore.mChannel;
+	mHeight = tensorcore.mHeight;
+	mWidth = tensorcore.mWidth;
+	mDataSize = tensorcore.mDataSize;
+	mCHW = tensorcore.mCHW;
+	mHW = tensorcore.mHW;
+
+	_m_need_grad = tensorcore._m_need_grad;
+	_m_on_cuda = tensorcore._m_on_cuda;
+
+	_m_cpu_data_address = tensorcore._m_cpu_data_address;
+	tensorcore._m_cpu_data_address = nullptr;
+	_m_gpu_data_address = tensorcore._m_gpu_data_address;
+	tensorcore._m_gpu_data_address = nullptr;
+	_m_cpu_grad_data_address = tensorcore._m_cpu_grad_data_address;
+	tensorcore._m_cpu_grad_data_address = nullptr;
+	_m_gpu_grad_data_address = tensorcore._m_gpu_grad_data_address;
+	tensorcore._m_gpu_grad_data_address = nullptr;
+
+	m_parent_exist = tensorcore.m_parent_exist;
+
+
+	_m_upstream_layer = tensorcore._m_upstream_layer;
+	tensorcore._m_upstream_layer.reset();
+	_m_downstream_layer = tensorcore._m_downstream_layer;
+	tensorcore._m_downstream_layer.reset();
+	_m_location_in_upstream_layer = tensorcore._m_location_in_upstream_layer;
+	_m_location_in_downstream_layer = tensorcore._m_location_in_downstream_layer;
+}
+
+void TensorCore::resetShapeAs(u32 width)
+{
+	//未初期化の場合
+	if (mDimension == Dimension::dim0)
+	{
+		*this = TensorCore(width);
+	}
+	else
+	{
+
+	}
+}
+
+void TensorCore::resetShapeAs(u32 batchSize, u32 channel, u32 height, u32 width)
+{
+	//未初期化の場合
+	if (mDimension == Dimension::dim0)
+	{
+
+	}
+	else
+	{
+
+	}
 }
 
 
@@ -171,7 +235,7 @@ void TensorCore::callBackward() const
 {
 	if (std::shared_ptr<layer::Layer::LayerSkeleton> parentLayerCore = _m_upstream_layer.lock())
 	{
-		parentLayerCore->callBackward();
+		parentLayerCore->callBackward(_m_location_in_upstream_layer);
 	}
 	else if (m_parent_exist)
 	{
@@ -712,7 +776,7 @@ void TensorCore::synchronize_from_CPU_to_GPU()
 {
 	if (!_m_on_cuda)
 		return;
-	CHECK(cudaMemcpy(_m_gpu_data_address,      _m_cpu_data_address,      mDataSize * sizeof(DataType), cudaMemcpyHostToDevice));
+	CHECK(cudaMemcpy(_m_gpu_data_address, _m_cpu_data_address, mDataSize * sizeof(DataType), cudaMemcpyHostToDevice));
 	CHECK(cudaMemcpy(_m_gpu_grad_data_address, _m_cpu_grad_data_address, mDataSize * sizeof(DataType), cudaMemcpyHostToDevice));
 	CUDA_SYNCHRONIZE_DEBUG;
 }
@@ -726,10 +790,7 @@ void TensorCore::connect(const std::shared_ptr<layer::Layer::LayerSkeleton>& lay
 
 void TensorCore::deleteArrayAddress(DataType* p)
 {
-	if (p)
-	{
-		delete[] p;
-	}
+	delete[] p;
 }
 
 void TensorCore::cuda_free(DataType* p)

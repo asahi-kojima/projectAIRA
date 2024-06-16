@@ -71,7 +71,7 @@ public:
 	virtual ~LayerSkeleton() {}
 
 	iotype callForward(const iotype&);
-	void callBackward();
+	void callBackward(u32 downstream_index);
 	void regist_this_to_output_tensor();
 
 	u32 get_input_tensor_num() const { return m_input_tensor_num; }
@@ -118,7 +118,23 @@ protected:
 
 	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor);
 
+
+	void genTensor(u32 childNo, std::shared_ptr<TensorCore>&& tensorcore)
+	{
+		if (childNo >= m_output_tensor_num)
+		{
+			assert(0);
+		}
+
+		m_child_tensorcore_tbl[childNo] = tensorcore;
+		m_child_tensorcore_tbl[childNo]->_m_location_in_upstream_layer = childNo;
+		m_child_tensorcore_tbl[childNo]->regist_parent_layercore(shared_from_this());
+	}
+
 private:
+
+	std::vector<bool> m_downstream_backward_checkTbl;
+
 	void common_check_before_forward(const iotype& input_tensors);
 	//{
 	//	//まず引き数に与えられた入力テンソル数が層が決めた値に一致しているか確認。

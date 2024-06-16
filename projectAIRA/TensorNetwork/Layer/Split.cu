@@ -76,6 +76,8 @@ LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tens
 		auto& child_tensorcore1 = m_child_tensorcore_tbl[1];
 		child_tensorcore0 = std::make_shared<TensorCore>(input_tensorcore, true);
 		child_tensorcore1 = std::make_shared<TensorCore>(input_tensorcore, true);
+		child_tensorcore0->_m_location_in_upstream_layer = 0;
+		child_tensorcore1->_m_location_in_upstream_layer = 1;
 		child_tensorcore0->regist_parent_layercore(shared_from_this());
 		child_tensorcore1->regist_parent_layercore(shared_from_this());
 

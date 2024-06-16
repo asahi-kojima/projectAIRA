@@ -155,6 +155,7 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 
 		auto& child_tensorcore = m_child_tensorcore_tbl[0];
 		child_tensorcore = std::make_shared<TensorCore>(1, true);
+		child_tensorcore->_m_location_in_upstream_layer = 0;
 		child_tensorcore->regist_parent_layercore(shared_from_this());
 		child_tensorcore->d(0) = 1;
 

@@ -65,7 +65,6 @@ namespace aoba::nn::tensor
 
 	void Tensor::backward()
 	{
-		pTensorCore->backward_finish = true;
 		pTensorCore->callBackward();
 	}
 
