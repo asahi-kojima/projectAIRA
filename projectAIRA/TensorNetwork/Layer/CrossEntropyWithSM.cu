@@ -153,10 +153,8 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 		m_batch_size = batchSize_lhs;
 		m_label_num = dataSize_lhs;
 
-		auto& child_tensorcore = m_child_tensorcore_tbl[0];
-		child_tensorcore = std::make_shared<TensorCore>(1, true);
-		child_tensorcore->_m_location_in_upstream_layer = 0;
-		child_tensorcore->regist_parent_layercore(shared_from_this());
+		auto& child_tensorcore = m_output_tensorcore_tbl[0];
+		genDownStreamTensor(0, std::make_shared<TensorCore>(1, true));
 		child_tensorcore->d(0) = 1;
 
 		mLossPerBatch = Tensor(m_batch_size, 1, false);
@@ -174,7 +172,7 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 	}
 
 
-	const auto& loss = *m_child_tensorcore_tbl[0];
+	const auto& loss = *m_output_tensorcore_tbl[0];
 
 	if (batchSize_lhs != m_batch_size)
 	{
@@ -189,7 +187,7 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 		auto inference_address = inference._m_gpu_data_address;
 		auto correct_address = correct._m_gpu_data_address;
 		auto lossPerBatch_address = mLossPerBatch.pTensorCore->_m_gpu_data_address;
-		auto output_address = m_child_tensorcore_tbl[0]->_m_gpu_data_address;
+		auto output_address = m_output_tensorcore_tbl[0]->_m_gpu_data_address;
 
 		{
 			dim3 block(32);
@@ -210,7 +208,7 @@ LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotyp
 		forward_cpu_impl(input_tensors);
 	}
 
-	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
+	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
 }
 
 
@@ -267,7 +265,7 @@ void CrossEntropyWithSMCore::forward_cpu_impl(const LayerSkeleton::iotype& input
 {
 	const auto& inference = *getTensorCoreFrom(input_tensors[0]);
 	const auto& correct = *getTensorCoreFrom(input_tensors[1]);
-	auto& output = *m_child_tensorcore_tbl[0];
+	auto& output = *m_output_tensorcore_tbl[0];
 
 	DataType result = 0.0f;
 

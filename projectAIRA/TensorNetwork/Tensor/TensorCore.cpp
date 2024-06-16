@@ -179,6 +179,8 @@ TensorCore& TensorCore::operator=(TensorCore&& tensorcore)
 	tensorcore._m_downstream_layer.reset();
 	_m_location_in_upstream_layer = tensorcore._m_location_in_upstream_layer;
 	_m_location_in_downstream_layer = tensorcore._m_location_in_downstream_layer;
+
+	return *this;
 }
 
 void TensorCore::resetShapeAs(u32 width)
@@ -217,6 +219,7 @@ void TensorCore::to_cuda(const std::string& device_name)
 		//ä˘Ç…CUDAÇ…ì]ëóçœÇ›ÅB
 		return;
 	}
+
 	_m_on_cuda = true;
 
 
@@ -250,7 +253,7 @@ void TensorCore::callBackward() const
 
 
 
-void TensorCore::regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>& parent_layercore)
+void TensorCore::regist_upstream_layer(const std::shared_ptr<layer::Layer::LayerSkeleton>& parent_layercore)
 {
 	_m_upstream_layer = parent_layercore;
 	m_parent_exist = true;
@@ -752,11 +755,11 @@ DataType& TensorCore::d(u32 index)
 	}
 }
 
-void TensorCore::disconnect_bidirection()
+void TensorCore::disconnect_upstream_tensorcore()
 {
 	if (_m_downstream_layer)
 	{
-		_m_downstream_layer->disconnect_bidirection(_m_location_in_downstream_layer);
+		_m_downstream_layer->disconnect_upstream_tensorcore(_m_location_in_downstream_layer);
 		_m_downstream_layer.reset();
 		_m_location_in_downstream_layer = -1;
 		m_parent_exist = false;

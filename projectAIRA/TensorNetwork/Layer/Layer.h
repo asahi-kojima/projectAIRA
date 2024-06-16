@@ -72,7 +72,7 @@ public:
 
 	iotype callForward(const iotype&);
 	void callBackward(u32 downstream_index);
-	void regist_this_to_output_tensor();
+	//void regist_this_to_output_tensor();
 
 	u32 get_input_tensor_num() const { return m_input_tensor_num; }
 	u32 get_output_tensor_num() const { return m_output_tensor_num; }
@@ -85,7 +85,7 @@ protected:
 	using TensorCore = aoba::nn::tensor::TensorCore;
 	using Tensor = aoba::nn::tensor::Tensor;
 
-	bool unique_implimention_layer = true;
+	bool having_unique_implimention = true;
 	bool m_init_finish = false;
 	bool m_on_cuda = false;
 
@@ -99,7 +99,7 @@ protected:
 	/// この層が生成したテンソル
 	///（各層はテンソル用のメモリを直接見ているイメージ）
 	/// </summary>
-	std::vector<std::shared_ptr<TensorCore>> m_child_tensorcore_tbl;
+	std::vector<std::shared_ptr<TensorCore>> m_output_tensorcore_tbl;
 
 	/// <summary>
 	/// 順伝搬でインプットされたテンソル情報を覚えておく用
@@ -119,17 +119,7 @@ protected:
 	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor);
 
 
-	void genTensor(u32 childNo, std::shared_ptr<TensorCore>&& tensorcore)
-	{
-		if (childNo >= m_output_tensor_num)
-		{
-			assert(0);
-		}
-
-		m_child_tensorcore_tbl[childNo] = tensorcore;
-		m_child_tensorcore_tbl[childNo]->_m_location_in_upstream_layer = childNo;
-		m_child_tensorcore_tbl[childNo]->regist_parent_layercore(shared_from_this());
-	}
+	void genDownStreamTensor(u32 childNo, std::shared_ptr<TensorCore>&& tensorcore);
 
 private:
 
@@ -186,7 +176,7 @@ private:
 	//		tensorcore->connect(shared_from_this(), i);
 	//	}
 	//}
-	void disconnect_bidirection(s32 location)
+	void disconnect_upstream_tensorcore(s32 location)
 	{
 		mInputTensorCoreTbl[location].reset();
 	}
@@ -205,7 +195,7 @@ private:
 	/// <returns></returns>
 	virtual void backward()
 	{
-		unique_implimention_layer = false;
+		having_unique_implimention = false;
 	}
 
 

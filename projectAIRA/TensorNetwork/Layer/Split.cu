@@ -72,14 +72,11 @@ LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tens
 	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
-		auto& child_tensorcore0 = m_child_tensorcore_tbl[0];
-		auto& child_tensorcore1 = m_child_tensorcore_tbl[1];
-		child_tensorcore0 = std::make_shared<TensorCore>(input_tensorcore, true);
-		child_tensorcore1 = std::make_shared<TensorCore>(input_tensorcore, true);
-		child_tensorcore0->_m_location_in_upstream_layer = 0;
-		child_tensorcore1->_m_location_in_upstream_layer = 1;
-		child_tensorcore0->regist_parent_layercore(shared_from_this());
-		child_tensorcore1->regist_parent_layercore(shared_from_this());
+		auto& child_tensorcore0 = m_output_tensorcore_tbl[0];
+		auto& child_tensorcore1 = m_output_tensorcore_tbl[1];
+
+		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
+		genDownStreamTensor(1, std::make_shared<TensorCore>(input_tensorcore, true));
 
 		if (input_tensorcore._m_on_cuda)
 		{
@@ -90,8 +87,8 @@ LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tens
 		m_init_finish = true;
 	}
 
-	const auto& child_tensorcore0 = *m_child_tensorcore_tbl[0];
-	const auto& child_tensorcore1 = *m_child_tensorcore_tbl[1];
+	const auto& child_tensorcore0 = *m_output_tensorcore_tbl[0];
+	const auto& child_tensorcore1 = *m_output_tensorcore_tbl[1];
 
 	auto dataSize_input = input_tensorcore.mDataSize;
 	auto dataSize_output0 = child_tensorcore0.mDataSize;
@@ -125,7 +122,7 @@ LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tens
 	}
 
 
-	return iotype{ Tensor(m_child_tensorcore_tbl[0]), Tensor(m_child_tensorcore_tbl[1]) };
+	return iotype{ Tensor(m_output_tensorcore_tbl[0]), Tensor(m_output_tensorcore_tbl[1]) };
 }
 
 
@@ -142,8 +139,8 @@ void SplitCore::backward()
 			auto dataSize = input_tensor_core->mDataSize;
 			if (m_on_cuda)
 			{
-				auto output0_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-				auto output1_address = m_child_tensorcore_tbl[1]->_m_gpu_grad_data_address;
+				auto output0_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
+				auto output1_address = m_output_tensorcore_tbl[1]->_m_gpu_grad_data_address;
 				auto input_address = input_tensor_core->_m_gpu_grad_data_address;
 
 				dim3 block(256);
@@ -153,8 +150,8 @@ void SplitCore::backward()
 			}
 			else
 			{
-				auto output0_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
-				auto output1_address = m_child_tensorcore_tbl[1]->_m_cpu_grad_data_address;
+				auto output0_address = m_output_tensorcore_tbl[0]->_m_cpu_grad_data_address;
+				auto output1_address = m_output_tensorcore_tbl[1]->_m_cpu_grad_data_address;
 				auto input_address = input_tensor_core->_m_cpu_grad_data_address;
 				split_backward_impl_cpu(output0_address, output1_address, input_address, dataSize);
 			}

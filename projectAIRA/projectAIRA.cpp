@@ -455,7 +455,7 @@ int main()
 	//
 	check_Affine();
 	check_ReLU();
-	return 1;
+	//return 1;
 	////テスト8
 	{
 		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));

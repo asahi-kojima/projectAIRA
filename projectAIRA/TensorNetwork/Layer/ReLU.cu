@@ -86,10 +86,8 @@ LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tenso
 	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
-		auto& child_tensorcore = m_child_tensorcore_tbl[0];
-		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore, true);
-		child_tensorcore->_m_location_in_upstream_layer = 0;
-		child_tensorcore->regist_parent_layercore(shared_from_this());
+		auto& child_tensorcore = m_output_tensorcore_tbl[0];
+		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
 
 		auto& mask = m_parameter_tbl[0];
 		mask = std::make_shared<TensorCore>(input_tensorcore, false);
@@ -106,7 +104,7 @@ LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tenso
 		m_init_finish = true;
 	}
 
-	auto& child_tensorcore = *m_child_tensorcore_tbl[0];
+	auto& child_tensorcore = *m_output_tensorcore_tbl[0];
 	const auto& mask = *m_parameter_tbl[0];
 	auto dataSize = child_tensorcore.mDataSize;
 	if (dataSize != dataSize_input)
@@ -135,7 +133,7 @@ LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tenso
 		relu_forward_impl_cpu(output_address, input_address, mask_address, dataSize);
 	}
 
-	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
+	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
 }
 
 
@@ -145,7 +143,7 @@ void ReLUCore::backward()
 	{
 		if (input_tensor_core->_m_need_grad)
 		{
-			const auto& output_tensorcore = *m_child_tensorcore_tbl[0];
+			const auto& output_tensorcore = *m_output_tensorcore_tbl[0];
 			auto& input_tensorcore = *input_tensor_core;
 			const auto& mask = *m_parameter_tbl[0];
 

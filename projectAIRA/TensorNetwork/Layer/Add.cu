@@ -95,10 +95,9 @@ LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensor
 	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
-		auto& child_tensorcore = m_child_tensorcore_tbl[0];
-		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore0, true);
-		child_tensorcore->_m_location_in_upstream_layer = 0;
-		child_tensorcore->regist_parent_layercore(shared_from_this());
+		auto& child_tensorcore = m_output_tensorcore_tbl[0];
+		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore0, true));
+
 
 		if (input_tensorcore0._m_on_cuda)
 		{
@@ -108,7 +107,7 @@ LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensor
 		m_init_finish = true;
 	}
 
-	const auto& child_tensorcore = *m_child_tensorcore_tbl[0];
+	const auto& child_tensorcore = *m_output_tensorcore_tbl[0];
 
 	auto dataSize = child_tensorcore.mDataSize;
 	if (dataSize_lhs != dataSize_rhs || dataSize != dataSize_lhs)
@@ -139,7 +138,7 @@ LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensor
 		add_forward_cpu_impl(input_address0, input_address1, output_address, dataSize);
 	}
 
-	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
+	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
 }
 
 
@@ -156,10 +155,10 @@ void AddCore::backward()
 			if (need_grad0 || need_grad1)/*どちらも勾配不要な状況なら逆伝搬をスキップできる*/
 			{
 
-				auto dataSize = m_child_tensorcore_tbl[0]->mDataSize;
+				auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
 				if (m_on_cuda)
 				{
-					auto output_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
+					auto output_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
 					auto input_address0 = input_tensor_core0->_m_gpu_grad_data_address;
 					auto input_address1 = input_tensor_core1->_m_gpu_grad_data_address;
 
@@ -170,7 +169,7 @@ void AddCore::backward()
 				}
 				else
 				{
-					auto output_address = m_child_tensorcore_tbl[0]->_m_cpu_grad_data_address;
+					auto output_address = m_output_tensorcore_tbl[0]->_m_cpu_grad_data_address;
 					auto input_address0 = input_tensor_core0->_m_cpu_grad_data_address;
 					auto input_address1 = input_tensor_core1->_m_cpu_grad_data_address;
 					add_backward_cpu_impl(input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);

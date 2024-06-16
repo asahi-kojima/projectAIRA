@@ -174,10 +174,8 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 		m_batch_size = input_tensorcore.mBatchSize;
 		m_input_size = input_tensorcore.mCHW;
 
-		auto& child_tensorcore = m_child_tensorcore_tbl[0];
-		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore.mBatchSize, m_output_size, true);
-		child_tensorcore->_m_location_in_upstream_layer = 0;
-		child_tensorcore->regist_parent_layercore(shared_from_this());
+		auto& child_tensorcore = m_output_tensorcore_tbl[0];
+		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore.mBatchSize, m_output_size, true));
 
 		auto& weight = m_parameter_tbl[0];
 		auto& bias = m_parameter_tbl[1];
@@ -225,7 +223,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 	}
 
 	{
-		const auto& child_tensorcore = *m_child_tensorcore_tbl[0];
+		const auto& child_tensorcore = *m_output_tensorcore_tbl[0];
 		const auto& weight = *m_parameter_tbl[0];
 		const auto& bias = *m_parameter_tbl[1];
 
@@ -257,7 +255,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 	}
 
 
-	return iotype{ Tensor(m_child_tensorcore_tbl[0]) };
+	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
 }
 
 
@@ -266,8 +264,8 @@ void AffineCore::backward()
 	//std::cout << "Affine backward" << std::endl;
 	if (std::shared_ptr<TensorCore> input_tensorcore = mInputTensorCoreTbl[0].lock())
 	{
-		auto dataSize = m_child_tensorcore_tbl[0]->mDataSize;
-		auto output_grad_address = m_child_tensorcore_tbl[0]->_m_gpu_grad_data_address;
+		auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
+		auto output_grad_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
 		auto input_address = input_tensorcore->_m_gpu_data_address;
 		auto input_grad_address = input_tensorcore->_m_gpu_grad_data_address;
 		auto weight_address = m_parameter_tbl[0]->_m_gpu_data_address;
@@ -313,7 +311,7 @@ void AffineCore::backward()
 
 		if (input_tensorcore->_m_need_grad)//勾配不要の場合、逆伝搬はスキップ出来る。
 		{
-			auto dataSize = m_child_tensorcore_tbl[0]->mDataSize;
+			auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
 			if (m_on_cuda)
 			{
 				dim3 block(16, 16);
@@ -345,7 +343,7 @@ void AffineCore::backward()
 void AffineCore::forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 {
 	const auto& input = *getTensorCoreFrom(input_tensors[0]);
-	auto& output = *m_child_tensorcore_tbl[0];
+	auto& output = *m_output_tensorcore_tbl[0];
 	const auto& weight = *m_parameter_tbl[0];
 	const auto& bias = *m_parameter_tbl[1];
 
@@ -366,7 +364,7 @@ void AffineCore::forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
 
 void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
-	const auto& output = *m_child_tensorcore_tbl[0];
+	const auto& output = *m_output_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;
 	auto& weight = *m_parameter_tbl[0];
 	auto& bias = *m_parameter_tbl[1];
@@ -387,7 +385,7 @@ void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& inpu
 
 void AffineCore::backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
-	const auto& output = *m_child_tensorcore_tbl[0];
+	const auto& output = *m_output_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;
 	auto& weight = *m_parameter_tbl[0];
 	auto& bias = *m_parameter_tbl[1];

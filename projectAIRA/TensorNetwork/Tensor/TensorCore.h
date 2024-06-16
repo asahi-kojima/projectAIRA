@@ -159,9 +159,9 @@ private:
 
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
-	void disconnect_bidirection();
+	void disconnect_upstream_tensorcore();
 	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
-	void regist_parent_layercore(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
+	void regist_upstream_layer(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
 
 
 
