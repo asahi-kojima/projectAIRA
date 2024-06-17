@@ -159,15 +159,13 @@ private:
 
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
-	void disconnect_upstream_tensorcore();
+	void disconnect_bidirection();
 	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
 	void regist_upstream_layer(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
 
 
 
 	void cleanMemory();
-
-
 	void deleteArrayAddress(DataType*& p);
 	void cuda_free(DataType*& p);
 

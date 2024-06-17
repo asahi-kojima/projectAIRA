@@ -89,7 +89,7 @@ namespace aoba::nn::layer
 				if (std::shared_ptr<TensorCore> p = mInputTensorCoreTbl[i].lock())
 				{
 					//上流テンソルに依頼して、双方向にリンクを切ってもらう。
-					p->disconnect_upstream_tensorcore();
+					p->disconnect_bidirection();
 				}
 
 				auto& tensorcore = input_tensors[i].pTensorCore;
@@ -98,7 +98,7 @@ namespace aoba::nn::layer
 				//ここでそれを解除する。
 				if (tensorcore->_m_downstream_layer)
 				{
-					tensorcore->disconnect_upstream_tensorcore();
+					tensorcore->disconnect_bidirection();
 				}
 
 

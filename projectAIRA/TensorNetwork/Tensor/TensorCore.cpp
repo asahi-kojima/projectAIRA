@@ -752,7 +752,7 @@ DataType& TensorCore::d(u32 index)
 	}
 }
 
-void TensorCore::disconnect_upstream_tensorcore()
+void TensorCore::disconnect_bidirection()
 {
 	if (_m_downstream_layer)
 	{
