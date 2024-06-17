@@ -141,10 +141,7 @@ TensorCore::TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool n
 
 TensorCore::~TensorCore()
 {
-	deleteArrayAddress(_m_cpu_data_address);
-	deleteArrayAddress(_m_cpu_grad_data_address);
-	cuda_free(_m_gpu_data_address);
-	cuda_free(_m_gpu_grad_data_address);
+	cleanMemory();
 }
 
 TensorCore& TensorCore::operator=(TensorCore&& tensorcore)
@@ -790,18 +787,28 @@ void TensorCore::connect(const std::shared_ptr<layer::Layer::LayerSkeleton>& lay
 	_m_location_in_downstream_layer = location;
 }
 
-
-void TensorCore::deleteArrayAddress(DataType* p)
+void TensorCore::cleanMemory()
 {
-	delete[] p;
+	deleteArrayAddress(_m_cpu_data_address);
+	deleteArrayAddress(_m_cpu_grad_data_address);
+	cuda_free(_m_gpu_data_address);
+	cuda_free(_m_gpu_grad_data_address);
 }
 
-void TensorCore::cuda_free(DataType* p)
+void TensorCore::deleteArrayAddress(DataType*& p)
+{
+	delete[] p;
+	p = nullptr;
+}
+
+void TensorCore::cuda_free(DataType*& p)
 {
 	if (p)
 	{
 		cudaFree(p);
+		CUDA_SYNCHRONIZE_DEBUG;
 	}
+	p = nullptr;
 }
 
 void TensorCore::mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num)

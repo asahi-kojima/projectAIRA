@@ -165,11 +165,11 @@ private:
 
 
 
+	void cleanMemory();
 
 
-
-	void deleteArrayAddress(DataType* p);
-	void cuda_free(DataType* p);
+	void deleteArrayAddress(DataType*& p);
+	void cuda_free(DataType*& p);
 
 	void mallocOnCPU(DataType*& pointer_on_cpu, const u32 element_num);
 	void mallocAndInitOnCPU(DataType*& pointer_on_cpu, const u32 element_num, const DataType initValue = 0.0f);
