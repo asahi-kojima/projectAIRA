@@ -58,7 +58,7 @@ public:
 	friend class optimizer::Optimizer;
 
 	friend class layer::LayerBase;
-	friend class layer::ReLUCore;
+	//friend class layer::ReLUCore;
 	friend class layer::AffineCore;
 	friend class layer::AddCore;
 	friend class layer::SplitCore;
@@ -114,6 +114,43 @@ public:
 	DataType& d(u32, u32);
 	DataType  d(u32) const;
 	DataType& d(u32);
+
+	u32 getDataSize() const
+	{
+		return mDataSize;
+	}
+
+	bool isOnCuda() const
+	{
+		return m_on_cuda;
+	}
+
+	bool isGradRequired() const
+	{
+		return m_grad_required;
+	}
+
+	DataType* getGpuDataAddress()
+	{
+		return _m_gpu_data_address;
+	}
+
+	const DataType* getGpuDataAddress() const
+	{
+		return _m_gpu_data_address;
+	}
+
+	DataType* getGpuGradDataAddress()
+	{
+		return _m_gpu_grad_data_address;
+	}
+
+	const DataType* getGpuGradDataAddress() const
+	{
+		return _m_gpu_grad_data_address;
+	}
+
+	//DataType* 
 
 private:
 	/*0000000000000000000000000000000000000000000000000000000000000000000*/

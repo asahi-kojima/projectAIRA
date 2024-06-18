@@ -5,7 +5,7 @@
 
 namespace
 {
-	__global__ void relu_forward_impl_gpu(DataType* output_ptr, DataType* input_ptr, DataType* mask_ptr, u32 dataSize)
+	__global__ void relu_forward_impl_gpu(DataType* output_ptr, const DataType* input_ptr, DataType* mask_ptr, u32 dataSize)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
 		if (i >= dataSize)
@@ -25,7 +25,7 @@ namespace
 	}
 
 
-	__global__ void relu_backward_impl_gpu(DataType* doutput_ptr, DataType* dinput_ptr, DataType* mask_ptr, u32 data_size)
+	__global__ void relu_backward_impl_gpu(DataType* doutput_ptr, const DataType* dinput_ptr, const DataType* mask_ptr, u32 data_size)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
 		if (i >= data_size)
@@ -68,14 +68,14 @@ LayerBase::iotype ReLUCore::forward(const LayerBase::iotype& input_tensors)
 	//出力テンソルとパラメータの形状確認＆対応
 	{
 		//データサイズを格納
-		mDataSize = input.mDataSize;
+		mDataSize = input.getDataSize();
 		//m_on_cuda = input.m_on_cuda;
 
 		//出力テンソルの形状変更
-		mOutput.reshapeAs(input, input.m_on_cuda);
+		mOutput.reshapeAs(input, input.isOnCuda());
 
 		//マスクの形状変更
-		mMask.reshapeAs(input, input.m_on_cuda);
+		mMask.reshapeAs(input, input.isOnCuda());
 	}
 	
 
@@ -83,9 +83,9 @@ LayerBase::iotype ReLUCore::forward(const LayerBase::iotype& input_tensors)
 
 	if (m_on_cuda)
 	{
-		auto output_gpu_address = mOutput._m_gpu_data_address;
-		auto input_gpu_address = input._m_gpu_data_address;
-		auto mask_gpu_address = mMask._m_gpu_data_address;
+		auto output_gpu_address = mOutput.getGpuDataAddress();
+		auto input_gpu_address = input.getGpuDataAddress();
+		auto mask_gpu_address = mMask.getGpuDataAddress();
 
 		dim3 block(256);
 		dim3 grid((mDataSize + block.x - 1) / block.x);
@@ -105,18 +105,19 @@ void ReLUCore::backward()
 {
 	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
-		if (input_tensor_core->m_grad_required)
+		TensorCore& input = *input_tensor_core;
+		if (input.isGradRequired())
 		{
 			auto& input_tensorcore = *input_tensor_core;
 			if (m_on_cuda)
 			{
-				auto output_gpu_address = mOutput._m_gpu_grad_data_address;
-				auto input_gpu_address = input_tensorcore._m_gpu_grad_data_address;
-				auto mask_gpu_address = mMask._m_gpu_data_address;
+				auto output_gpu_grad_address = mOutput.getGpuGradDataAddress();
+				auto input_gpu_grad_address = input_tensorcore.getGpuGradDataAddress();
+				auto mask_gpu_address = mMask.getGpuDataAddress();
 
 				dim3 block(32);
 				dim3 grid((mDataSize + block.x - 1) / block.x);
-				relu_backward_impl_gpu << <grid, block >> > (input_gpu_address, output_gpu_address, mask_gpu_address, mDataSize);
+				relu_backward_impl_gpu << <grid, block >> > (input_gpu_grad_address, output_gpu_grad_address, mask_gpu_address, mDataSize);
 				CUDA_SYNCHRONIZE_DEBUG;
 			}
 			else
