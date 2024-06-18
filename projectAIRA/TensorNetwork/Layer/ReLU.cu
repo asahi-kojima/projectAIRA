@@ -38,17 +38,15 @@ namespace
 }
 
 using namespace aoba::nn::layer;
-using ReLUCore = Layer::ReLUCore;
-using LayerSkeleton = Layer::LayerSkeleton;
 
-Layer::nnLayer aoba::nn::layer::ReLU()
+Layer aoba::nn::layer::ReLU()
 {
-	Layer::nnLayer relu = gen<ReLUCore>("Add");
+	Layer relu = gen<ReLUCore>("Add");
 	return relu;
 }
 
 ReLUCore::ReLUCore()
-	: LayerSkeleton(1, 1, 1)
+	: LayerBase(1, 1, 1)
 	, mDataSize(0)
 	, mOutput(*m_output_tensorcore_tbl[0])
 	, mMask(false)
@@ -56,7 +54,7 @@ ReLUCore::ReLUCore()
 }
 
 
-LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tensors)
+LayerBase::iotype ReLUCore::forward(const LayerBase::iotype& input_tensors)
 {
 	if (!m_init_finish)
 	{

@@ -1,6 +1,6 @@
 #pragma once
+#include "LayerBase.h"
 #include "Layer.h"
-#include "nnLayer.h"
 
 namespace aoba
 {
@@ -8,7 +8,7 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class Layer::AddCore : public LayerSkeleton
+			class AddCore : public LayerBase
 			{
 			public:
 				AddCore();
@@ -20,13 +20,13 @@ namespace aoba
 			};
 			
 			
-			Layer::nnLayer Add();
+			Layer Add();
 
 
-			class Layer::AddAsInnerCore : public Layer::LayerSkeleton
+			class AddAsInnerCore : public LayerBase
 			{
 			public:
-				AddAsInnerCore() : LayerSkeleton(2, 1)
+				AddAsInnerCore() : LayerBase(2, 1)
 				{
 					mlayer["add"] = Add().getLayerCore();
 				}
@@ -40,9 +40,9 @@ namespace aoba
 
 
 
-			inline Layer::nnLayer AddAsInner()
+			inline Layer AddAsInner()
 			{
-				return gen<Layer::AddAsInnerCore>("AddAsInner");
+				return gen<AddAsInnerCore>("AddAsInner");
 			}
 		}
 	}

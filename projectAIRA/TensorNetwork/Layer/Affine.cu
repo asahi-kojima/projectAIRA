@@ -138,13 +138,11 @@ namespace
 }
 
 using namespace aoba::nn::layer;
-using AffineCore = Layer::AffineCore;
-using LayerSkeleton = Layer::LayerSkeleton;
 
 
-Layer::nnLayer aoba::nn::layer::Affine(u32 output_size)
+Layer aoba::nn::layer::Affine(u32 output_size)
 {
-	Layer::nnLayer affine = gen<AffineCore>("Affine", output_size);
+	Layer affine = gen<AffineCore>("Affine", output_size);
 	return affine;
 }
 
@@ -152,7 +150,7 @@ Layer::nnLayer aoba::nn::layer::Affine(u32 output_size)
 
 
 AffineCore::AffineCore(u32 output_size, DataType affineWeight)
-	:LayerSkeleton(1, 1, 1, 2)
+	:LayerBase(1, 1, 1, 2)
 	, mAffineWeight(affineWeight)
 	, m_output_size(output_size)
 	, m_batch_size(0)
@@ -166,7 +164,7 @@ AffineCore::AffineCore(u32 output_size, DataType affineWeight)
 AffineCore::~AffineCore()
 {}
 
-LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_tensors)
+LayerBase::iotype  AffineCore::forward(const LayerBase::iotype& input_tensors)
 {
 	if (!m_init_finish)
 	{

@@ -39,7 +39,7 @@ void SGD::optimize_unique()
 
 	for (auto iter = m_OptimizeScheduled_LayerCore_tbl.begin(), end = m_OptimizeScheduled_LayerCore_tbl.end(); iter != end; iter++)
 	{
-		if (const std::shared_ptr<layer::Layer::LayerSkeleton>& pLayercore = (*iter).lock())
+		if (const std::shared_ptr<layer::LayerBase>& pLayercore = (*iter).lock())
 		{
 			const auto& layercore = *pLayercore;
 			bool on_cuda = layercore.m_on_cuda;

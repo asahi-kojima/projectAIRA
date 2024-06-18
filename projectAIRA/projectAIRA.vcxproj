@@ -147,9 +147,9 @@
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
     <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
-    <ClInclude Include="TensorNetwork\Layer\Layer.h" />
+    <ClInclude Include="TensorNetwork\Layer\LayerBase.h" />
     <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
-    <ClInclude Include="TensorNetwork\Layer\nnLayer.h" />
+    <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\ReLU.h" />
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />

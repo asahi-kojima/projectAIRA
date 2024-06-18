@@ -10,7 +10,7 @@ namespace aoba { namespace nn { namespace tensor { class Tensor; } } }
 class aoba::nn::tensor::Tensor
 {
 public:
-	friend class aoba::nn::layer::Layer;
+	friend class layer::LayerBase;
 	friend class TensorCore;
 
 	Tensor();

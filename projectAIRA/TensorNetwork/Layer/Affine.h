@@ -1,5 +1,5 @@
 #pragma once
-#include "Layer.h"
+#include "LayerBase.h"
 
 namespace aoba
 {
@@ -7,7 +7,7 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class  Layer::AffineCore : public  Layer::LayerSkeleton
+			class  AffineCore : public  LayerBase
 			{
 			public:
 				AffineCore(u32 output_size, DataType affineWeight = 0.1f);
@@ -32,7 +32,7 @@ namespace aoba
 			};
 
 
-			Layer::nnLayer Affine(u32 output_size);
+			Layer Affine(u32 output_size);
 		}
 	}
 }

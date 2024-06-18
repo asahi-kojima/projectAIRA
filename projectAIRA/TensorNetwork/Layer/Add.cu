@@ -58,25 +58,23 @@ namespace
 }
 
 using namespace aoba::nn::layer;
-using AddCore = Layer::AddCore;
-using LayerSkeleton = Layer::LayerSkeleton;
 
 
-Layer::nnLayer Add()
+Layer Add()
 {
-	Layer::nnLayer add_layer = aoba::nn::layer::gen<AddCore>("Add");
+	Layer add_layer = aoba::nn::layer::gen<AddCore>("Add");
 	return add_layer;
 }
 
 
 AddCore::AddCore()
-	: LayerSkeleton(2, 1, 1)
+	: LayerBase(2, 1, 1)
 {
 }
 
 
 
-LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensors)
+LayerBase::iotype AddCore::forward(const LayerBase::iotype& input_tensors)
 {
 	const auto& input_tensorcore0 = *getTensorCoreFrom(input_tensors[0]);
 	const auto& input_tensorcore1 = *getTensorCoreFrom(input_tensors[1]);

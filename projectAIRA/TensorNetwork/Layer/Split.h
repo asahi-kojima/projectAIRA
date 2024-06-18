@@ -1,5 +1,5 @@
 #pragma once
-#include "Layer.h"
+#include "LayerBase.h"
 
 
 namespace aoba
@@ -9,7 +9,7 @@ namespace aoba
 		namespace layer
 		{
 
-			class Layer::SplitCore : public Layer::LayerSkeleton
+			class SplitCore : public LayerBase
 			{
 			public:
 				SplitCore();
@@ -21,7 +21,7 @@ namespace aoba
 			};
 
 
-			Layer::nnLayer Split();
+			Layer Split();
 		}
 	}
 }

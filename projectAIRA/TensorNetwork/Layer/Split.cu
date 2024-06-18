@@ -46,25 +46,23 @@ namespace
 }
 
 using namespace aoba::nn::layer;
-using SplitCore = Layer::SplitCore;
-using LayerSkeleton = Layer::LayerSkeleton;
 
 
-Layer::nnLayer Split()
+Layer Split()
 {
-	Layer::nnLayer add_layer = gen<SplitCore>("Add");
+	Layer add_layer = gen<SplitCore>("Add");
 	return add_layer;
 }
 
 
 SplitCore::SplitCore()
-	: LayerSkeleton(1, 2, 2)
+	: LayerBase(1, 2, 2)
 {
 }
 
 
 
-LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tensors)
+LayerBase::iotype SplitCore::forward(const LayerBase::iotype& input_tensors)
 {
 	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
 

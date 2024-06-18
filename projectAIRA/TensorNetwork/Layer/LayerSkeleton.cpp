@@ -1,22 +1,21 @@
-#include "Layer.h"
+#include "LayerBase.h"
 #include "Tensor/Tensor.h"
-#include "nnLayer.h"
+#include "Layer.h"
 
 namespace aoba::nn::layer
 {
-	using LayerSkeleton = Layer::LayerSkeleton;
 
-	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num)
-		: LayerSkeleton(input_tensor_num, output_tensor_num, 0, 0)
+	LayerBase::LayerBase(u32 input_tensor_num, u32 output_tensor_num)
+		: LayerBase(input_tensor_num, output_tensor_num, 0, 0)
 	{
 	}
 
-	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num, u32 output_tensorcore_num)
-		: LayerSkeleton(input_tensor_num, output_tensor_num, output_tensorcore_num , 0)
+	LayerBase::LayerBase(u32 input_tensor_num, u32 output_tensor_num, u32 output_tensorcore_num)
+		: LayerBase(input_tensor_num, output_tensor_num, output_tensorcore_num , 0)
 	{
 	}
 
-	LayerSkeleton::LayerSkeleton(u32 input_tensor_num, u32 output_tensor_num, u32 output_tensorcore_num, u32 trainable_parameter_num)
+	LayerBase::LayerBase(u32 input_tensor_num, u32 output_tensor_num, u32 output_tensorcore_num, u32 trainable_parameter_num)
 		: m_input_tensor_num(input_tensor_num)
 		, m_output_tensor_num(output_tensor_num)
 		, m_trainable_parameter_num(trainable_parameter_num)
@@ -38,12 +37,12 @@ namespace aoba::nn::layer
 		}
 	}
 
-	const std::shared_ptr<tensor::TensorCore>& LayerSkeleton::getTensorCoreFrom(const Tensor& tensor)
+	const std::shared_ptr<tensor::TensorCore>& LayerBase::getTensorCoreFrom(const Tensor& tensor)
 	{
 		return tensor.pTensorCore;
 	}
 
-	LayerSkeleton::iotype LayerSkeleton::callForward(const iotype& input_tensors)
+	LayerBase::iotype LayerBase::callForward(const iotype& input_tensors)
 	{
 		//共通作業をここで行う。
 
@@ -108,7 +107,7 @@ namespace aoba::nn::layer
 		return forward(input_tensors);
 	}
 
-	void LayerSkeleton::callBackward(u32 downstream_index)
+	void LayerBase::callBackward(u32 downstream_index)
 	{
 		//下流テンソル全ての逆伝搬が完了しているか確認
 		{
@@ -157,7 +156,7 @@ namespace aoba::nn::layer
 		}
 	}
 
-	void LayerSkeleton::initialize()
+	void LayerBase::initialize()
 	{
 		if (m_init_finish)
 		{
@@ -172,7 +171,7 @@ namespace aoba::nn::layer
 		m_init_finish = true;
 	}
 
-	void LayerSkeleton::genDownStreamTensor(u32 childNo)
+	void LayerBase::genDownStreamTensor(u32 childNo)
 	{
 		if (childNo >= m_output_tensor_num)
 		{
@@ -211,22 +210,22 @@ namespace aoba::nn::layer
 	//}
 
 
-	//LayerSkeleton::Layer::Layer(const Layer& layer)
+	//LayerSkeleton::Layer(const Layer& layer)
 	//	:mLayerCore(layer.getLayerCore())
 	//	,mLayerName(layer.mLayerName)
 	//{}
 
-	Layer::nnLayer::nnLayer(const nnLayer& layer)
+	Layer::Layer(const Layer& layer)
 		:mLayerSkeleton(layer.mLayerSkeleton)
 		, mLayerName(layer.mLayerName)
 	{}
 
-	Layer::nnLayer::nnLayer(const std::shared_ptr<LayerSkeleton>& tensorcore, std::string name)
+	Layer::Layer(const std::shared_ptr<LayerBase>& tensorcore, std::string name)
 		:mLayerSkeleton(tensorcore)
 		, mLayerName(name)
 	{}
 
-	LayerSkeleton::iotype Layer::nnLayer::operator()(const LayerSkeleton::iotype& input) const
+	LayerBase::iotype Layer::operator()(const LayerBase::iotype& input) const
 	{
 		return mLayerSkeleton->callForward(input);
 	}

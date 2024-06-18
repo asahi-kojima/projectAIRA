@@ -1,5 +1,5 @@
 #pragma once
-#include "Layer.h"
+#include "LayerBase.h"
 #include "Tensor/Tensor.h"
 namespace aoba 
 {
@@ -7,7 +7,7 @@ namespace aoba
 	{
 		namespace layer 
 		{
-			class Layer::CrossEntropyWithSMCore : public Layer::LayerSkeleton
+			class CrossEntropyWithSMCore : public LayerBase
 			{
 			public:
 				CrossEntropyWithSMCore();
@@ -28,7 +28,7 @@ namespace aoba
 			};
 
 
-			Layer::nnLayer CrossEntropyWithSM();
+			Layer CrossEntropyWithSM();
 
 
 		}

@@ -21,7 +21,7 @@ using namespace layer;
 using namespace optimizer;
 using namespace tensor;
 
-std::tuple<Tensor, Tensor> convert(const Layer::LayerSkeleton::iotype& tensor_vec)
+std::tuple<Tensor, Tensor> convert(const LayerBase::iotype& tensor_vec)
 {
 	if (tensor_vec.size() != 2)
 	{
@@ -267,7 +267,7 @@ public:
 		return seq(input);
 	}
 
-	aoba::nn::layer::Layer::nnLayer seq;
+	aoba::nn::layer::Layer seq;
 };
 
 
@@ -453,14 +453,14 @@ int main()
 	//}
 
 	//
-	//check_Affine();
-	//check_ReLU();
+	check_Affine();
+	check_ReLU();
 	//return 1;
 	////テスト8
 	{
 		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
-		auto seq = Sequential(Affine(10));
+		auto seq = Sequential(Affine(50), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
 		//auto affine1 = Affine(10);

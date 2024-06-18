@@ -71,7 +71,7 @@
     <ClInclude Include="TensorNetwork\Tensor\Tensor.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Tensor</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\Layer.h">
+    <ClInclude Include="TensorNetwork\Layer\LayerBase.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
@@ -116,7 +116,7 @@
     <ClInclude Include="TensorNetwork\Optimizer\SGD.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\nnLayer.h">
+    <ClInclude Include="TensorNetwork\Layer\Layer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
     <ClInclude Include="common\helper.h">

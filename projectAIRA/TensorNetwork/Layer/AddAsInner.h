@@ -5,7 +5,7 @@
 //namespace aoba {
 //	namespace nn {
 //		namespace layer {
-//			class Layer::AddAsInnerCore : public Layer::LayerSkeleton
+//			class AddAsInnerCore : public LayerSkeleton
 //			{
 //			public:
 //				AddAsInnerCore() : LayerSkeleton(2, 1)
@@ -25,9 +25,9 @@
 //
 //
 //
-//			inline Layer::nnLayer AddAsInner()
+//			inline nnLayer AddAsInner()
 //			{
-//				return gen<Layer::AddAsInnerCore>("AddAsInner");
+//				return gen<AddAsInnerCore>("AddAsInner");
 //			}
 //		}
 //	}

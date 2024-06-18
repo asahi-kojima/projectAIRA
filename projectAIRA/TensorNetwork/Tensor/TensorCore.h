@@ -6,7 +6,7 @@
 #include <iostream>
 #include "typeinfo.h"
 #include <cassert>
-#include "Layer/Layer.h"
+#include "Layer/LayerBase.h"
 
 #define CHECK(call)                                                            \
 {                                                                              \
@@ -55,8 +55,15 @@ class aoba::nn::tensor::TensorCore
 {
 public:
 	friend class tensor::Tensor;
-	friend class layer::Layer;
 	friend class optimizer::Optimizer;
+
+	friend class layer::LayerBase;
+	friend class layer::ReLUCore;
+	friend class layer::AffineCore;
+	friend class layer::AddCore;
+	friend class layer::SplitCore;
+	friend class layer::SequentialCore;
+	friend class layer::CrossEntropyWithSMCore;
 
 
 	/// <summary>
@@ -143,14 +150,14 @@ private:
 
 	//親(上流層)を把握しておく
 	//backwardの処理で必要。
-	std::weak_ptr<layer::Layer::LayerSkeleton> _m_upstream_layer;
+	std::weak_ptr<layer::LayerBase> _m_upstream_layer;
 	s32 _m_location_in_upstream_layer = -1;
 	bool m_upstream_exist = false;/*層に紐づく場合のみtrueになり、かつその場合のみ、逆伝搬が走る。*/
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
 	// 結合されたかを登録しておく。
-	std::shared_ptr<layer::Layer::LayerSkeleton> _m_downstream_layer;
+	std::shared_ptr<layer::LayerBase> _m_downstream_layer;
 	s32 _m_location_in_downstream_layer = -1;
 
 
@@ -159,8 +166,8 @@ private:
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
 	void disconnect_bidirection();
-	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
-	void regist_upstream_layer(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
+	void connect(const std::shared_ptr<layer::LayerBase>&, u32);
+	void regist_upstream_layer(const std::shared_ptr<layer::LayerBase>&);
 
 	bool isSameShape(const TensorCore&);
 	bool isSameShape(Dimension, u32 batchSize, u32 channel, u32 height, u32 width);

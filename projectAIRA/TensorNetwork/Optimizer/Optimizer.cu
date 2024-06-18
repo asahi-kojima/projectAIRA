@@ -26,14 +26,14 @@ OptimizerSkeleton::~OptimizerSkeleton()
 	//}
 }
 
-void OptimizerSkeleton::operator()(const layer::Layer::nnLayer& layer)
+void OptimizerSkeleton::operator()(const layer::Layer& layer)
 {
 	const auto& layercore = *layer.getLayerCore();
 
 	m_OptimizeScheduled_LayerCore_tbl.push_back(layer.getLayerCore());
 	for (auto iter = layercore.m_internal_layer_tbl.begin(), end = layercore.m_internal_layer_tbl.end(); iter != end; iter++)
 	{
-		layer::Layer::nnLayer layer{iter->second, ""};
+		layer::Layer layer{iter->second, ""};
 		(*this)(layer);
 	}
 }

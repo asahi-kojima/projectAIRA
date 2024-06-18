@@ -1,6 +1,6 @@
 #pragma once
 
+#include "Layer/LayerBase.h"
 #include "Layer/Layer.h"
-#include "Layer/nnLayer.h"
 #include "Tensor/Tensor.h"
 #include "Optimizer/Optimizer.h"

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
+#include "LayerBase.h"
 #include "Layer.h"
-#include "nnLayer.h"
 
 namespace aoba
 {
@@ -9,14 +9,14 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class Layer::SequentialCore : public Layer::LayerSkeleton
+			class SequentialCore : public LayerBase
 			{
 			public:
 				template <typename ... Args>
-				SequentialCore(Args ... args) : Layer::LayerSkeleton(1, 1)
+				SequentialCore(Args ... args) : LayerBase(1, 1)
 				{
 					//可変長テンプレートなので、分解してinnerModuleに格納している。
-					nnLayer layer_tbl[] = { args... };
+					Layer layer_tbl[] = { args... };
 					const u32 inner_layer_num = (sizeof(layer_tbl) / sizeof(layer_tbl[0]));
 
 					for (u32 i = 0, end = inner_layer_num; i < end; i++)
@@ -50,9 +50,9 @@ namespace aoba
 			};
 
 			template<typename ... Args>
-			Layer::nnLayer Sequential(Args ... args)
+			Layer Sequential(Args ... args)
 			{
-				return gen<Layer::SequentialCore>("Sequential", args...);
+				return gen<SequentialCore>("Sequential", args...);
 			}
 
 		}

@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
+#include "Layer/LayerBase.h"
 #include "Layer/Layer.h"
-#include "Layer/nnLayer.h"
 #include "Tensor/Tensor.h"
 namespace aoba
 {
@@ -35,7 +35,7 @@ public:
 	virtual void optimize() final;
 	virtual void initialize() = 0;
 	virtual void optimize_unique() = 0;
-	virtual void operator()(const layer::Layer::nnLayer&) final;
+	virtual void operator()(const layer::Layer&) final;
 
 	class SGD;
 	class Adam;
@@ -51,7 +51,7 @@ protected:
 	//};
 
 	DataType mLearningRate;
-	std::vector<std::weak_ptr<layer::Layer::LayerSkeleton> > m_OptimizeScheduled_LayerCore_tbl;
+	std::vector<std::weak_ptr<layer::LayerBase> > m_OptimizeScheduled_LayerCore_tbl;
 	//LinkedList* mLinkedParameters;
 
 private:

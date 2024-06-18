@@ -109,18 +109,17 @@ namespace
 }
 
 using namespace aoba::nn::layer;
-using CrossEntropyWithSMCore = Layer::CrossEntropyWithSMCore;
-using LayerSkeleton = Layer::LayerSkeleton;
 
-Layer::nnLayer aoba::nn::layer::CrossEntropyWithSM()
+
+Layer aoba::nn::layer::CrossEntropyWithSM()
 {
-	Layer::nnLayer add_layer = gen<CrossEntropyWithSMCore>("CrossEntropyWithSM");
+	Layer add_layer = gen<CrossEntropyWithSMCore>("CrossEntropyWithSM");
 	return add_layer;
 }
 
 
 CrossEntropyWithSMCore::CrossEntropyWithSMCore()
-	: LayerSkeleton(2, 1, 1)
+	: LayerBase(2, 1, 1)
 	, m_batch_size(0)
 	, m_label_num(0)
 	, mOutput(*m_output_tensorcore_tbl[0])
@@ -130,7 +129,7 @@ CrossEntropyWithSMCore::CrossEntropyWithSMCore()
 
 
 
-LayerSkeleton::iotype CrossEntropyWithSMCore::forward(const LayerSkeleton::iotype& input_tensors)
+LayerBase::iotype CrossEntropyWithSMCore::forward(const LayerBase::iotype& input_tensors)
 {
 
 
