@@ -1,5 +1,5 @@
 #include "CrossEntropyWithSM.h"
-#include "nnLayer.h"
+#include "Layer.h"
 
 namespace
 {
