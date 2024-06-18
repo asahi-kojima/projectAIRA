@@ -96,13 +96,13 @@ LayerSkeleton::iotype AddCore::forward(const LayerSkeleton::iotype& input_tensor
 	if (!m_init_finish)
 	{
 		auto& child_tensorcore = m_output_tensorcore_tbl[0];
-		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore0, true));
+		genDownStreamTensor(0);
 
 
-		if (input_tensorcore0._m_on_cuda)
+		if (input_tensorcore0.m_on_cuda)
 		{
 			m_on_cuda = true;
-			child_tensorcore->to_cuda("");
+			child_tensorcore->to_cuda();
 		}
 		m_init_finish = true;
 	}
@@ -150,8 +150,8 @@ void AddCore::backward()
 	{
 		if (std::shared_ptr<TensorCore> input_tensor_core1 = mInputTensorCoreTbl[1].lock())
 		{
-			bool need_grad0 = input_tensor_core0->_m_need_grad;
-			bool need_grad1 = input_tensor_core1->_m_need_grad;
+			bool need_grad0 = input_tensor_core0->m_grad_required;
+			bool need_grad1 = input_tensor_core1->m_grad_required;
 			if (need_grad0 || need_grad1)/*どちらも勾配不要な状況なら逆伝搬をスキップできる*/
 			{
 

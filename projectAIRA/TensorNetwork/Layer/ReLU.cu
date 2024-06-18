@@ -5,29 +5,6 @@
 
 namespace
 {
-	void relu_forward_impl_cpu(DataType* output_ptr, DataType* input_ptr, DataType* mask_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			const auto& input_value = input_ptr[i];
-			auto& mask = mask_ptr[i];
-			if (input_value > 0)
-				mask = 1;
-			else
-				mask = 0;
-			output_ptr[i] = input_value * mask;
-		}
-	}
-
-	void relu_backward_impl_cpu(DataType* d_output_ptr, DataType* d_input_ptr, DataType* mask_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			d_input_ptr[i] = d_output_ptr[i] * mask_ptr[i];
-		}
-	}
-
-
 	__global__ void relu_forward_impl_gpu(DataType* output_ptr, DataType* input_ptr, DataType* mask_ptr, u32 dataSize)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -71,66 +48,55 @@ Layer::nnLayer aoba::nn::layer::ReLU()
 }
 
 ReLUCore::ReLUCore()
-	: LayerSkeleton(1, 1, 1, 1)
+	: LayerSkeleton(1, 1, 1)
+	, mDataSize(0)
+	, mOutput(*m_output_tensorcore_tbl[0])
+	, mMask(false)
 {
 }
 
 
 LayerSkeleton::iotype ReLUCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
-	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
-
-	auto dataSize_input = input_tensorcore.mDataSize;
-
-
-	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
-		auto& child_tensorcore = m_output_tensorcore_tbl[0];
-		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
-
-		auto& mask = m_parameter_tbl[0];
-		mask = std::make_shared<TensorCore>(input_tensorcore, false);
-
-		if (input_tensorcore._m_on_cuda)
-		{
-			m_on_cuda = true;
-
-			child_tensorcore->to_cuda("");
-
-			//内部パラメータもCUDAに送る。
-			mask->to_cuda("");
-		}
-		m_init_finish = true;
+		initialize();
 	}
 
-	auto& child_tensorcore = *m_output_tensorcore_tbl[0];
-	const auto& mask = *m_parameter_tbl[0];
-	auto dataSize = child_tensorcore.mDataSize;
-	if (dataSize != dataSize_input)
+	const auto& input = *getTensorCoreFrom(input_tensors[0]);
+
+
+
+	//出力テンソルとパラメータの形状確認＆対応
 	{
-		std::cout << "Input tensor size between Input & Output is not match." << std::endl;
-		exit(1);
+		//データサイズを格納
+		mDataSize = input.mDataSize;
+		//m_on_cuda = input.m_on_cuda;
+
+		//出力テンソルの形状変更
+		mOutput.reshapeAs(input, input.m_on_cuda);
+
+		//マスクの形状変更
+		mMask.reshapeAs(input, input.m_on_cuda);
 	}
+	
+
 
 
 	if (m_on_cuda)
 	{
-		auto output_address = child_tensorcore._m_gpu_data_address;
-		auto input_address = input_tensorcore._m_gpu_data_address;
-		auto mask_address = mask._m_gpu_data_address;
+		auto output_gpu_address = mOutput._m_gpu_data_address;
+		auto input_gpu_address = input._m_gpu_data_address;
+		auto mask_gpu_address = mMask._m_gpu_data_address;
 
 		dim3 block(256);
-		dim3 grid((dataSize + block.x - 1) / block.x);
-		relu_forward_impl_gpu << <grid, block >> > (output_address, input_address, mask_address, dataSize);
+		dim3 grid((mDataSize + block.x - 1) / block.x);
+		relu_forward_impl_gpu << <grid, block >> > (output_gpu_address, input_gpu_address, mask_gpu_address, mDataSize);
 		CUDA_SYNCHRONIZE_DEBUG;
 	}
 	else
 	{
-		auto output_address = child_tensorcore._m_cpu_data_address;
-		auto input_address = input_tensorcore._m_cpu_data_address;
-		auto mask_address = mask._m_cpu_data_address;
-		relu_forward_impl_cpu(output_address, input_address, mask_address, dataSize);
+		forward_cpu_impl(input);
 	}
 
 	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
@@ -141,32 +107,23 @@ void ReLUCore::backward()
 {
 	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
-		if (input_tensor_core->_m_need_grad)
+		if (input_tensor_core->m_grad_required)
 		{
-			const auto& output_tensorcore = *m_output_tensorcore_tbl[0];
 			auto& input_tensorcore = *input_tensor_core;
-			const auto& mask = *m_parameter_tbl[0];
-
-			auto dataSize = output_tensorcore.mDataSize;
 			if (m_on_cuda)
 			{
-				auto d_output_address = output_tensorcore._m_gpu_grad_data_address;
-				auto d_input_address = input_tensorcore._m_gpu_grad_data_address;
-				auto mask_address = mask._m_gpu_data_address;
+				auto output_gpu_address = mOutput._m_gpu_grad_data_address;
+				auto input_gpu_address = input_tensorcore._m_gpu_grad_data_address;
+				auto mask_gpu_address = mMask._m_gpu_data_address;
 
 				dim3 block(32);
-				dim3 grid((dataSize + block.x - 1) / block.x);
-				relu_backward_impl_gpu << <grid, block >> > (d_input_address, d_output_address, mask_address, dataSize);
+				dim3 grid((mDataSize + block.x - 1) / block.x);
+				relu_backward_impl_gpu << <grid, block >> > (input_gpu_address, output_gpu_address, mask_gpu_address, mDataSize);
 				CUDA_SYNCHRONIZE_DEBUG;
-				//input_tensorcore.synchronize_from_GPU_to_CPU();
 			}
 			else
 			{
-				auto output_grad_address = output_tensorcore._m_cpu_grad_data_address;
-				auto input_grad_address = input_tensorcore._m_cpu_grad_data_address;
-				auto mask_address = mask._m_cpu_data_address;
-				relu_backward_impl_cpu(output_grad_address, input_grad_address, mask_address, dataSize);
-
+				backward_cpu_impl(*input_tensor_core);
 			}
 		}
 	}
@@ -177,3 +134,26 @@ void ReLUCore::backward()
 	}
 }
 
+
+void ReLUCore::forward_cpu_impl(const TensorCore& input)
+{
+	for (u32 i = 0; i < mDataSize; i++)
+	{
+		const auto& input_value = input[i];
+		auto& mask = mMask[i];
+		
+		if (input_value > 0)
+			mask = 1;
+		else
+			mask = 0;
+		
+		mOutput[i] = input_value * mask;
+	}
+}
+void ReLUCore::backward_cpu_impl(TensorCore& input)
+{
+	for (u32 i = 0; i < mDataSize; i++)
+	{
+		input.d(i) = mOutput.d(i) * mMask[i];
+	}
+}

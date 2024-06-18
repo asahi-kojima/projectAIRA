@@ -453,14 +453,14 @@ int main()
 	//}
 
 	//
-	check_Affine();
-	check_ReLU();
+	//check_Affine();
+	//check_ReLU();
 	//return 1;
 	////テスト8
 	{
-		auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		//auto seq = Sequential(Affine(100), ReLU(), Affine(10));
-
+		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
+		auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
 		//auto affine1 = Affine(10);
@@ -496,6 +496,8 @@ int main()
 			std::cout << "-------------------------------" << std::endl;
 			std::cout << "Loop : " << i << std::endl;
 			std::cout << "-------------------------------" << std::endl;
+
+			DataType average_prob = 0.0f;
 			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
 			{
 				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(true);
@@ -504,11 +506,12 @@ int main()
 				auto loss = lossFunc(t[0], correct_tensor);
 				loss[0].synchronize_from_GPU_to_CPU();
 				auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
+				average_prob = (average_prob * Bn + prob) / (Bn + 1);
 				//std::cout << prob * 100 << std::endl;
 				loss[0].backward();
 				optim.optimize();
 
-				progressBar(Bn, batched_data_num, prob * 100);
+				progressBar(Bn, batched_data_num, average_prob * 100);
 			}
 			std::cout << std::endl;
 		}

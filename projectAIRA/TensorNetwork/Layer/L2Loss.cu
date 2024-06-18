@@ -44,7 +44,7 @@
 //		child_tensorcore = std::make_shared<TensorCore>(input_tensorcore0, true);
 //		child_tensorcore->regist_parent_layercore(shared_from_this());
 //
-//		if (input_tensorcore0._m_on_cuda)
+//		if (input_tensorcore0.m_on_cuda)
 //		{
 //			m_on_cuda = true;
 //			child_tensorcore->to_cuda("");

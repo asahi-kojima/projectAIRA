@@ -19,11 +19,12 @@ namespace aoba
 
 				u32 m_batch_size;
 				u32 m_label_num;
-				tensor::Tensor mLossPerBatch;
+				TensorCore& mOutput;
+				TensorCore mLossPerBatch;
 
 
-				void forward_cpu_impl(const Layer::LayerSkeleton::iotype&);
-				void backward_cpu_impl(const std::shared_ptr<TensorCore>&, const std::shared_ptr<TensorCore>&);
+				void forward_cpu_impl(const TensorCore&, const TensorCore&);
+				void backward_cpu_impl(TensorCore&, const TensorCore&);
 			};
 
 

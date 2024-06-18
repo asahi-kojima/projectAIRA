@@ -91,7 +91,7 @@ protected:
 
 
 
-	std::vector<std::shared_ptr<TensorCore> > m_parameter_tbl;
+	std::vector<std::shared_ptr<TensorCore> > mTrainableParameterTbl;
 	std::map<std::string, std::shared_ptr<Layer::LayerSkeleton> > m_internal_layer_tbl;
 	std::map<std::string, std::shared_ptr<Layer::LayerSkeleton> >& mlayer;//上記のエイリアス:そのままだと長いから
 
@@ -111,6 +111,7 @@ protected:
 	//入力と出力のテンソルの数を記録
 	const u32 m_input_tensor_num;
 	const u32 m_output_tensor_num;
+	const u32 m_trainable_parameter_num;
 
 	//void init_childtensor_with(std::shared_ptr<Layer::LayerSkeleton>&& )
 
@@ -118,8 +119,8 @@ protected:
 
 	const std::shared_ptr<TensorCore>& getTensorCoreFrom(const Tensor& tensor);
 
-
-	void genDownStreamTensor(u32 childNo, std::shared_ptr<TensorCore>&& tensorcore);
+	void initialize();
+	void genDownStreamTensor(u32 childNo);
 
 private:
 
@@ -137,10 +138,10 @@ private:
 	//	}
 	//
 	//	//入力テンソル間のGPU利用設定に矛盾がないかチェックする。
-	//	bool on_cuda = input_tensors[0].pTensorCore->_m_on_cuda;
+	//	bool on_cuda = input_tensors[0].pTensorCore->m_on_cuda;
 	//	for (u32 i = 1; i < m_input_tensor_num; i++)
 	//	{
-	//		if (input_tensors[i].pTensorCore->_m_on_cuda != on_cuda)
+	//		if (input_tensors[i].pTensorCore->m_on_cuda != on_cuda)
 	//		{
 	//			std::cout << "Between input tensor's, CPU/GPU setting contradict!" << std::endl;
 	//			exit(1);

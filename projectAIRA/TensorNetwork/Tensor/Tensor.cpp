@@ -78,7 +78,7 @@ namespace aoba::nn::tensor
 	void Tensor::to_cuda(bool gpu_is_available)
 	{
 		if (gpu_is_available)
-			pTensorCore->to_cuda("");
+			pTensorCore->to_cuda();
 	}
 
 	void Tensor::synchronize_from_GPU_to_CPU()

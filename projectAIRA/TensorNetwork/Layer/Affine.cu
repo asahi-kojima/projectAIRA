@@ -153,10 +153,13 @@ Layer::nnLayer aoba::nn::layer::Affine(u32 output_size)
 
 AffineCore::AffineCore(u32 output_size, DataType affineWeight)
 	:LayerSkeleton(1, 1, 1, 2)
+	, mAffineWeight(affineWeight)
+	, m_output_size(output_size)
 	, m_batch_size(0)
 	, m_input_size(0)
-	, m_output_size(output_size)
-	, mAffineWeight(affineWeight)
+	, mOutput(*m_output_tensorcore_tbl[0])
+	, mWeight(*mTrainableParameterTbl[0])
+	, mBias(*mTrainableParameterTbl[1])
 {
 }
 
@@ -165,84 +168,82 @@ AffineCore::~AffineCore()
 
 LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_tensors)
 {
-	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
-
-	auto dataSize_input = input_tensorcore.mDataSize;
-
 	if (!m_init_finish)
 	{
-		m_batch_size = input_tensorcore.mBatchSize;
-		m_input_size = input_tensorcore.mCHW;
+		initialize();
+	}
 
-		auto& child_tensorcore = m_output_tensorcore_tbl[0];
-		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore.mBatchSize, m_output_size, true));
 
-		auto& weight = m_parameter_tbl[0];
-		auto& bias = m_parameter_tbl[1];
-		weight = std::make_shared<TensorCore>(m_output_size, m_input_size, true);
-		bias = std::make_shared<TensorCore>(m_output_size, true);
+	const auto& input = *getTensorCoreFrom(input_tensors[0]);
 
+	const u32  input_batchSize = input.mBatchSize;
+	const u32  input_chw = input.mCHW;
+	const bool input_on_cuda = input.m_on_cuda;
+
+
+	//出力テンソルと訓練パラメータの形状確認＆対応
+	{
+		m_batch_size = input_batchSize;
+		m_input_size = input_chw;
+		//m_on_cuda = input_on_cuda;
+
+		//出力テンソルの形状変更
+		mOutput.reshapeAs(input_batchSize, m_output_size, input_on_cuda);
+
+		//weightの形状変更
+		bool isWeightInit = mWeight.reshapeAs(m_output_size, m_input_size, input_on_cuda);
+
+		//biasの形状変更
+		//バイアスは初回だけ初期化され、それ以降は変化しない。
+		bool isBiasInit = mBias.reshapeAs(m_output_size, input_on_cuda);
+
+		
+
+		if (isWeightInit)
 		{
+#ifdef _DEBUG
+			std::cout << "Weight Param was initialized." << std::endl;
+#endif // _DEBUG
 			std::random_device seed_gen;
 			std::default_random_engine engine(seed_gen());
 			std::normal_distribution<> dist(0.0f, std::sqrt(2.0f / m_input_size));
-			for (u32 i = 0; i < weight->mDataSize; i++)
+			for (u32 i = 0, end = mWeight.mDataSize; i < end; i++)
 			{
-				weight->_m_cpu_data_address[i] = mAffineWeight * static_cast<DataType>(dist(engine));
+				mWeight._m_cpu_data_address[i] = mAffineWeight * static_cast<DataType>(dist(engine));
 			}
-			for (u32 i = 0; i < bias->mDataSize; i++)
+			mWeight.synchronize_from_CPU_to_GPU();
+		}
+
+		if (isBiasInit)
+		{
+#ifdef _DEBUG
+			std::cout << "Bias Param was initialized." << std::endl;
+#endif // _DEBUG
+			for (u32 i = 0, end = mBias.mDataSize; i < end; i++)
 			{
-				bias->_m_cpu_data_address[i] = 0.0f;
+				mBias._m_cpu_data_address[i] = 0.0f;
 			}
-		}
-
-		if (input_tensorcore._m_on_cuda)
-		{
-			m_on_cuda = true;
-
-			child_tensorcore->to_cuda("");
-
-			//内部パラメータもCUDAに送る。
-			weight->to_cuda("");
-			bias->to_cuda("");
-		}
-		m_init_finish = true;
-	}
-
-	{
-		if (input_tensorcore.mBatchSize != m_batch_size)
-		{
-			std::cout << "input batch size does not match" << std::endl;
-			exit(1);
-		}
-		if (input_tensorcore.mCHW != m_input_size)
-		{
-			std::cout << "input chw size does not match" << std::endl;
-			exit(1);
+			mBias.synchronize_from_CPU_to_GPU();
 		}
 	}
 
+
+	//順伝搬処理
 	{
-		const auto& child_tensorcore = *m_output_tensorcore_tbl[0];
-		const auto& weight = *m_parameter_tbl[0];
-		const auto& bias = *m_parameter_tbl[1];
-
-
-		//std::cout << "Affine forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
 		if (m_on_cuda)
 		{
-			auto output_address = child_tensorcore._m_gpu_data_address;
-			auto input_address = input_tensorcore._m_gpu_data_address;
-			auto weight_address = weight._m_gpu_data_address;
-			auto bias_address = bias._m_gpu_data_address;
+			auto output_gpu_address = mOutput._m_gpu_data_address;
+			auto input_gpu_address = input._m_gpu_data_address;
+			auto weight_gpu_address = mWeight._m_gpu_data_address;
+			auto bias_gpu_address = mBias._m_gpu_data_address;
 
 			dim3 block(32, 32);
 			dim3 grid((m_output_size + block.x - 1) / block.x, (m_batch_size + block.y - 1) / block.y);
 			affine_forward_gpu_impl << <grid, block >> > (
-				output_address,
-				input_address,
-				weight_address,
-				bias_address,
+				output_gpu_address,
+				input_gpu_address,
+				weight_gpu_address,
+				bias_gpu_address,
 				m_batch_size,
 				m_output_size,
 				m_input_size);
@@ -250,7 +251,7 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 		}
 		else
 		{
-			forward_cpu_impl(input_tensors);
+			forward_cpu_impl(input);
 		}
 	}
 
@@ -261,16 +262,20 @@ LayerSkeleton::iotype  AffineCore::forward(const LayerSkeleton::iotype& input_te
 
 void AffineCore::backward()
 {
-	//std::cout << "Affine backward" << std::endl;
-	if (std::shared_ptr<TensorCore> input_tensorcore = mInputTensorCoreTbl[0].lock())
+	//std::cout << "Affine Backward" << std::endl;
+	if (std::shared_ptr<TensorCore> input_ptr = mInputTensorCoreTbl[0].lock())
 	{
-		auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
-		auto output_grad_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-		auto input_address = input_tensorcore->_m_gpu_data_address;
-		auto input_grad_address = input_tensorcore->_m_gpu_grad_data_address;
-		auto weight_address = m_parameter_tbl[0]->_m_gpu_data_address;
-		auto weight_grad_address = m_parameter_tbl[0]->_m_gpu_grad_data_address;
-		auto bias_grad_address = m_parameter_tbl[1]->_m_gpu_grad_data_address;
+		auto& input = *input_ptr;
+
+		auto output_gpu_grad_address = mOutput._m_gpu_grad_data_address;
+
+		auto input_gpu_address = input._m_gpu_data_address;
+		auto input_gpu_grad_address = input._m_gpu_grad_data_address;
+
+		auto weight_gpu_address = mWeight._m_gpu_data_address;
+		auto weight_gpu_grad_address = mWeight._m_gpu_grad_data_address;
+
+		auto bias_gpu_grad_address = mBias._m_gpu_grad_data_address;
 
 		//パラメータの逆伝搬
 		{
@@ -282,9 +287,9 @@ void AffineCore::backward()
 					dim3 block(16, 16);
 					dim3 grid((m_input_size + block.x - 1) / block.x, (m_output_size + block.y - 1) / block.y);
 					affine_backward_gpu_impl_weight << <grid, block >> > (
-						weight_grad_address,
-						output_grad_address,
-						input_address,
+						weight_gpu_grad_address,
+						output_gpu_grad_address,
+						input_gpu_address,
 						m_batch_size,
 						m_output_size,
 						m_input_size);
@@ -296,8 +301,8 @@ void AffineCore::backward()
 					dim3 block(16);
 					dim3 grid((m_output_size + block.x - 1) / block.x);
 					affine_backward_gpu_impl_bias << <grid, block >> > (
-						bias_grad_address,
-						output_grad_address,
+						bias_gpu_grad_address,
+						output_gpu_grad_address,
 						m_batch_size,
 						m_output_size);
 					CUDA_SYNCHRONIZE_DEBUG;
@@ -305,21 +310,20 @@ void AffineCore::backward()
 			}
 			else
 			{
-				backward_cpu_impl_parameter(input_tensorcore);
+				backward_cpu_impl_parameter(input_ptr);
 			}
 		}
 
-		if (input_tensorcore->_m_need_grad)//勾配不要の場合、逆伝搬はスキップ出来る。
+		if (input.m_grad_required)//勾配不要の場合、逆伝搬はスキップ出来る。
 		{
-			auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
 			if (m_on_cuda)
 			{
 				dim3 block(16, 16);
 				dim3 grid((m_input_size + block.x - 1) / block.x, (m_batch_size + block.y - 1) / block.y);
 				affine_backward_gpu_impl_input << <grid, block >> > (
-					input_grad_address,
-					output_grad_address,
-					weight_address,
+					input_gpu_grad_address,
+					output_gpu_grad_address,
+					weight_gpu_address,
 					m_batch_size,
 					m_output_size,
 					m_input_size);
@@ -327,7 +331,7 @@ void AffineCore::backward()
 			}
 			else
 			{
-				backward_cpu_impl_input(input_tensorcore);
+				backward_cpu_impl_input(input_ptr);
 			}
 		}
 	}
@@ -340,34 +344,26 @@ void AffineCore::backward()
 
 
 
-void AffineCore::forward_cpu_impl(const LayerSkeleton::iotype& input_tensors)
+void AffineCore::forward_cpu_impl(const TensorCore& input)
 {
-	const auto& input = *getTensorCoreFrom(input_tensors[0]);
-	auto& output = *m_output_tensorcore_tbl[0];
-	const auto& weight = *m_parameter_tbl[0];
-	const auto& bias = *m_parameter_tbl[1];
-
-	for (u32 N = 0, end = output.mBatchSize; N < end; N++)
+	for (u32 N = 0, end = mOutput.mBatchSize; N < end; N++)
 	{
 		for (u32 O = 0; O < m_output_size; O++)
 		{
 			DataType result = 0.0f;
 			for (u32 I = 0; I < m_input_size; I++)
 			{
-				result += weight(O, I) * input(N, I);
+				result += mWeight(O, I) * input(N, I);
 			}
 
-			output(N, O) = result + bias(O);
+			mOutput(N, O) = result + mBias(O);
 		}
 	}
 }
 
 void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
-	const auto& output = *m_output_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;
-	auto& weight = *m_parameter_tbl[0];
-	auto& bias = *m_parameter_tbl[1];
 
 	for (u32 N = 0; N < m_batch_size; N++)
 	{
@@ -376,7 +372,7 @@ void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& inpu
 			DataType result = 0.0f;
 			for (u32 O = 0; O < m_output_size; O++)
 			{
-				result += weight(O, I) * output.d(N, O);
+				result += mWeight(O, I) * mOutput.d(N, O);
 			}
 			input.d(N, I) = result;
 		}
@@ -385,10 +381,7 @@ void AffineCore::backward_cpu_impl_input(const std::shared_ptr<TensorCore>& inpu
 
 void AffineCore::backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>& input_tensorcore)
 {
-	const auto& output = *m_output_tensorcore_tbl[0];
 	auto& input = *input_tensorcore;
-	auto& weight = *m_parameter_tbl[0];
-	auto& bias = *m_parameter_tbl[1];
 
 	for (u32 O = 0; O < m_output_size; O++)
 	{
@@ -397,16 +390,16 @@ void AffineCore::backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>& 
 			DataType result = 0.0f;
 			for (u32 N = 0; N < m_batch_size; N++)
 			{
-				result += input(N, I) * output.d(N, O);
+				result += input(N, I) * mOutput.d(N, O);
 			}
-			weight.d(O, I) = result;
+			mWeight.d(O, I) = result;
 		}
 
 		DataType result = 0.0f;
 		for (u32 N = 0; N < m_batch_size; N++)
 		{
-			result += output.d(N, O);
+			result += mOutput.d(N, O);
 		}
-		bias.d(O) = result;
+		mBias.d(O) = result;
 	}
 }

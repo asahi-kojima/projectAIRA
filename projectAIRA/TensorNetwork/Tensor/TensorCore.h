@@ -62,29 +62,28 @@ public:
 	/// <summary>
 	/// 全てのメンバ変数を未初期化の状態に留める。
 	/// </summary>
-	TensorCore();
-	TensorCore(const TensorCore& tensorcore, bool need_grad = false);//要再検討：メモリをどこまでコピーするか
-	TensorCore(u32 width, bool need_grad = false);
-	TensorCore(u32 batchSize, u32 width, bool need_grad = false);
-	TensorCore(u32 batchSize, u32 height, u32 width, bool need_grad = false);
-	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool need_grad = false);
+	TensorCore(bool grad_required = false);
+	TensorCore(const TensorCore& tensorcore, bool grad_required = false, bool memory_synch = false);//要再検討：メモリをどこまでコピーするか
+	TensorCore(u32 width, bool grad_required = false);
+	TensorCore(u32 batchSize, u32 width, bool grad_required = false);
+	TensorCore(u32 batchSize, u32 height, u32 width, bool grad_required = false);
+	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool grad_required = false);
 	virtual ~TensorCore();
 
-	TensorCore& operator=(TensorCore&& tensorcore);
-
-	void resetShapeAs(u32 width);
-	void resetShapeAs(u32 batchSize, u32 width);
-	void resetShapeAs(u32 batchSize, u32 height, u32 width);
-	void resetShapeAs(u32 batchSize, u32 channel, u32 height, u32 width);
+	
+	bool reshapeAs(const TensorCore&, bool on_cuda = false);
+	bool reshapeAs(u32 width, bool on_cuda = false);
+	bool reshapeAs(u32 batchSize, u32 width, bool on_cuda = false);
+	bool reshapeAs(u32 batchSize, u32 height, u32 width, bool on_cuda = false);
+	bool reshapeAs(u32 batchSize, u32 channel, u32 height, u32 width, bool on_cuda = false);
 
 
 	//テンソルのデータをGPUに転送する。
 	//GPU上のメモリ確保＆転送
-	void to_cuda(const std::string&);
+	void to_cuda();
 
 	//逆伝搬関数を呼ぶ
 	void callBackward() const;
-
 
 
 
@@ -97,6 +96,8 @@ public:
 	DataType& operator()(u32, u32);
 	DataType  operator()(u32) const;
 	DataType& operator()(u32);
+	DataType operator[](u32) const;
+	DataType& operator[](u32);
 
 	DataType  d(u32, u32, u32, u32) const;
 	DataType& d(u32, u32, u32, u32);
@@ -124,14 +125,14 @@ private:
 	u32 mChannel;/*チャンネル数*/
 	u32 mHeight;/*高さ*/
 	u32 mWidth;/*横幅*/
-	u32 mDataSize;/*テンソルのデータサイズ*/
-	u32 mCHW;/*チャンネル×高さ×横幅*/
 	u32 mHW;/*高さ×横幅*/
+	u32 mCHW;/*チャンネル×高さ×横幅*/
+	u32 mDataSize;/*テンソルのデータサイズ*/
 
 
 	//CPU/GPUリソースに関する変数
-	bool _m_need_grad = false;/*勾配が必要か。末端などでは必要ない。*/
-	bool _m_on_cuda = false;/*GPUを利用するか否か*/
+	bool m_grad_required = false;/*勾配が必要か。末端などでは必要ない。*/
+	bool m_on_cuda = false;/*GPUを利用するか否か*/
 
 	DataType* _m_cpu_data_address = nullptr;/*データのCPUアドレス*/
 	DataType* _m_gpu_data_address = nullptr;/*データのGPUアドレス*/
@@ -140,13 +141,11 @@ private:
 	DataType* _m_gpu_grad_data_address = nullptr;/*GPU勾配情報。on_cudaフラグが立っている場合のみ確保する*/
 
 
-	//NN層とテンソルの連結に関する変数
-	bool m_parent_exist = false;/*層に紐づく場合のみtrueになり、かつその場合のみ、逆伝搬が走る。*/
-
 	//親(上流層)を把握しておく
 	//backwardの処理で必要。
 	std::weak_ptr<layer::Layer::LayerSkeleton> _m_upstream_layer;
 	s32 _m_location_in_upstream_layer = -1;
+	bool m_upstream_exist = false;/*層に紐づく場合のみtrueになり、かつその場合のみ、逆伝搬が走る。*/
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
@@ -163,7 +162,12 @@ private:
 	void connect(const std::shared_ptr<layer::Layer::LayerSkeleton>&, u32);
 	void regist_upstream_layer(const std::shared_ptr<layer::Layer::LayerSkeleton>&);
 
+	bool isSameShape(const TensorCore&);
+	bool isSameShape(Dimension, u32 batchSize, u32 channel, u32 height, u32 width);
+	void setNewShape(const TensorCore&);
+	void setNewShape(Dimension, u32 batchSize, u32 channel, u32 height, u32 width);
 
+	TensorCore& operator=(TensorCore&& tensorcore);
 
 	void cleanMemory();
 	void deleteArrayAddress(DataType*& p);
@@ -178,6 +182,9 @@ private:
 	void memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address, u32 data_size);
 
 
+
+	//const DataType* get_cpu_data_address() const;
+	//DataType* get_cpu_data_address();
 
 public:
 	static void memcpyFromVector(Tensor&, const std::vector<DataType>&);

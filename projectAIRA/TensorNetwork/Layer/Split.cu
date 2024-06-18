@@ -75,14 +75,14 @@ LayerSkeleton::iotype SplitCore::forward(const LayerSkeleton::iotype& input_tens
 		auto& child_tensorcore0 = m_output_tensorcore_tbl[0];
 		auto& child_tensorcore1 = m_output_tensorcore_tbl[1];
 
-		genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
-		genDownStreamTensor(1, std::make_shared<TensorCore>(input_tensorcore, true));
+		//genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
+		//genDownStreamTensor(1, std::make_shared<TensorCore>(input_tensorcore, true));
 
-		if (input_tensorcore._m_on_cuda)
+		if (input_tensorcore.m_on_cuda)
 		{
 			m_on_cuda = true;
-			child_tensorcore0->to_cuda("");
-			child_tensorcore1->to_cuda("");
+			child_tensorcore0->to_cuda();
+			child_tensorcore1->to_cuda();
 		}
 		m_init_finish = true;
 	}
@@ -132,7 +132,7 @@ void SplitCore::backward()
 	std::cout << "Add backward" << std::endl;
 	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
-		bool need_grad = input_tensor_core->_m_need_grad;
+		bool need_grad = input_tensor_core->m_grad_required;
 
 		if (need_grad)
 		{

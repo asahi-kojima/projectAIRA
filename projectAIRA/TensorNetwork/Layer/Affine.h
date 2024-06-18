@@ -17,11 +17,16 @@ namespace aoba
 				virtual iotype forward(const iotype& input_tensors) override;
 				virtual void backward() override;
 
+
+				const DataType mAffineWeight = 0.1f;
+				const u32 m_output_size;
 				u32 m_batch_size;
 				u32 m_input_size;
-				u32 m_output_size;
-				const DataType mAffineWeight = 0.1f;
-				void forward_cpu_impl(const LayerSkeleton::iotype&);
+				TensorCore& mOutput;
+				TensorCore& mWeight;
+				TensorCore& mBias;
+
+				void forward_cpu_impl(const TensorCore&);
 				void backward_cpu_impl_input(const std::shared_ptr<TensorCore>&);
 				void backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>&);
 			};

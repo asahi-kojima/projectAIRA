@@ -43,10 +43,10 @@ void SGD::optimize_unique()
 		{
 			const auto& layercore = *pLayercore;
 			bool on_cuda = layercore.m_on_cuda;
-			for (auto iter = layercore.m_parameter_tbl.begin(), end = layercore.m_parameter_tbl.end(); iter != end; iter++)
+			for (auto iter = layercore.mTrainableParameterTbl.begin(), end = layercore.mTrainableParameterTbl.end(); iter != end; iter++)
 			{
 				auto& parameter_tensor = *(*iter);
-				if (!parameter_tensor._m_need_grad)
+				if (!parameter_tensor.m_grad_required)
 				{
 					continue;
 				}
