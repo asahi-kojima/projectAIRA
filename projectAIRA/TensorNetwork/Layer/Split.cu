@@ -1,17 +1,9 @@
 #include "Split.h"
-#include "nnLayer.h"
+#include "Layer.h"
+
 namespace
 {
-	void split_forward_impl_cpu(DataType* input_ptr, DataType* output0_ptr, DataType* output1_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			output0_ptr[i] = input_ptr[i];
-			output1_ptr[i] = input_ptr[i];
-		}
-	}
-
-	__global__ void split_forward_impl_gpu(DataType* input_ptr, DataType* output0_ptr, DataType* output1_ptr, u32 data_size)
+	__global__ void forward_impl_gpu(DataType* output0, DataType* output1, const DataType* input, u32 data_size)
 	{
 		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
 		if (xid >= data_size)
@@ -19,21 +11,13 @@ namespace
 			return;
 		}
 
-		output0_ptr[xid] = input_ptr[xid];
-		output1_ptr[xid] = input_ptr[xid];
+		const DataType inputValue = input[xid];
+		output0[xid] = inputValue;
+		output1[xid] = inputValue;
 	}
 
 
-
-	void split_backward_impl_cpu(DataType* d_output0_ptr, DataType* d_output1_ptr, DataType* d_input_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			d_input_ptr[i] = d_output0_ptr[i] + d_output1_ptr[i];
-		}
-	}
-
-	__global__ void split_backward_impl_gpu(DataType* d_output0_ptr, DataType* d_output1_ptr, DataType* d_input_ptr, u32 data_size)
+	__global__ void backward_impl_gpu(DataType* input_grad, const DataType* output0_grad, const DataType* output1_grad, u32 data_size)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
 		if (i >= data_size)
@@ -41,7 +25,7 @@ namespace
 			return;
 		}
 
-		d_input_ptr[i] = d_output0_ptr[i] + d_output1_ptr[i];
+		input_grad[i] = output0_grad[i] + output1_grad[i];
 	}
 }
 
@@ -50,73 +34,54 @@ using namespace aoba::nn::layer;
 
 Layer Split()
 {
-	Layer add_layer = gen<SplitCore>("Add");
+	Layer add_layer = gen<SplitCore>("Split");
 	return add_layer;
 }
 
 
 SplitCore::SplitCore()
-	: LayerBase(1, 2, 2)
+	: BaseLayer(1, 2, 2)
+	, m_data_size(0)
+	, mOutput0(*m_output_tensorcore_tbl[0])
+	, mOutput1(*m_output_tensorcore_tbl[1])
 {
 }
 
 
 
-LayerBase::iotype SplitCore::forward(const LayerBase::iotype& input_tensors)
+BaseLayer::iotype SplitCore::forward(const BaseLayer::iotype& input_tensors)
 {
-	const auto& input_tensorcore = *getTensorCoreFrom(input_tensors[0]);
-
-
-	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
 	if (!m_init_finish)
 	{
-		auto& child_tensorcore0 = m_output_tensorcore_tbl[0];
-		auto& child_tensorcore1 = m_output_tensorcore_tbl[1];
-
-		//genDownStreamTensor(0, std::make_shared<TensorCore>(input_tensorcore, true));
-		//genDownStreamTensor(1, std::make_shared<TensorCore>(input_tensorcore, true));
-
-		if (input_tensorcore.m_on_cuda)
-		{
-			m_on_cuda = true;
-			child_tensorcore0->to_cuda();
-			child_tensorcore1->to_cuda();
-		}
-		m_init_finish = true;
+		initialize();
 	}
 
-	const auto& child_tensorcore0 = *m_output_tensorcore_tbl[0];
-	const auto& child_tensorcore1 = *m_output_tensorcore_tbl[1];
+	const auto& input = *getTensorCoreFrom(input_tensors[0]);
 
-	auto dataSize_input = input_tensorcore.mDataSize;
-	auto dataSize_output0 = child_tensorcore0.mDataSize;
-	auto dataSize_output1 = child_tensorcore1.mDataSize;
-	if (dataSize_input != dataSize_output0 || dataSize_input != dataSize_output1)
+	//出力テンソルと訓練パラメータの形状確認＆対応
 	{
-		std::cout << "Input tensor size between Input & Output0 & Output1 is not match." << std::endl;
-		exit(1);
+		m_data_size = input.getDataSize();
+
+		//出力テンソルの形状変更
+		mOutput0.reshapeAs(input, input.isOnCuda());
+		mOutput1.reshapeAs(input, input.isOnCuda());
 	}
 
 
-
-	std::cout << "Split forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
 	if (m_on_cuda)
 	{
-		auto input_address = input_tensorcore._m_gpu_data_address;
-		auto output0_address = child_tensorcore0._m_gpu_data_address;
-		auto output1_address = child_tensorcore1._m_gpu_data_address;
+		auto input_gpu_address = input.getGpuDataAddress();
+		auto output0_gpu_address = mOutput0.getGpuDataAddress();
+		auto output1_gpu_address = mOutput1.getGpuDataAddress();
 
-		dim3 block(256);
-		dim3 grid((dataSize_input + block.x - 1) / block.x);
-		split_forward_impl_gpu << <grid, block >> > (input_address, output0_address, output1_address, dataSize_input);
+		dim3 block(32);
+		dim3 grid((m_data_size + block.x - 1) / block.x);
+		forward_impl_gpu << <grid, block >> > (output0_gpu_address, output1_gpu_address, input_gpu_address, m_data_size);
 		CUDA_SYNCHRONIZE_DEBUG;
 	}
 	else
 	{
-		auto input_address = input_tensorcore._m_cpu_data_address;
-		auto output0_address = child_tensorcore0._m_cpu_data_address;
-		auto output1_address = child_tensorcore1._m_cpu_data_address;
-		split_forward_impl_cpu(input_address, output0_address, output1_address, dataSize_input);
+		forward_cpu_impl(input);
 	}
 
 
@@ -127,31 +92,26 @@ LayerBase::iotype SplitCore::forward(const LayerBase::iotype& input_tensors)
 
 void SplitCore::backward()
 {
-	std::cout << "Add backward" << std::endl;
-	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
+	if (const std::shared_ptr<TensorCore>& input_tensorcore = mInputTensorCoreTbl[0].lock())
 	{
-		bool need_grad = input_tensor_core->m_grad_required;
+		TensorCore& input = *input_tensorcore;
 
-		if (need_grad)
+		if (input.requiresGrad())
 		{
-			auto dataSize = input_tensor_core->mDataSize;
 			if (m_on_cuda)
 			{
-				auto output0_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-				auto output1_address = m_output_tensorcore_tbl[1]->_m_gpu_grad_data_address;
-				auto input_address = input_tensor_core->_m_gpu_grad_data_address;
+				const auto output0_gpu_grad_address = mOutput0.getGpuGradDataAddress();
+				const auto output1_gpu_grad_address = mOutput1.getGpuGradDataAddress();
+				auto input_gpu_grad_address = input.getGpuGradDataAddress();
 
-				dim3 block(256);
-				dim3 grid((dataSize + block.x - 1) / block.x);
-				split_backward_impl_gpu << <grid, block >> > (output0_address, output1_address, input_address, dataSize);
+				dim3 block(32);
+				dim3 grid((m_data_size + block.x - 1) / block.x);
+				backward_impl_gpu << <grid, block >> > (input_gpu_grad_address, output0_gpu_grad_address, output1_gpu_grad_address, m_data_size);
 				CUDA_SYNCHRONIZE_DEBUG;
 			}
 			else
 			{
-				auto output0_address = m_output_tensorcore_tbl[0]->_m_cpu_grad_data_address;
-				auto output1_address = m_output_tensorcore_tbl[1]->_m_cpu_grad_data_address;
-				auto input_address = input_tensor_core->_m_cpu_grad_data_address;
-				split_backward_impl_cpu(output0_address, output1_address, input_address, dataSize);
+				backward_cpu_impl(input);
 			}
 		}
 	}
@@ -162,3 +122,20 @@ void SplitCore::backward()
 	}
 }
 
+void SplitCore::forward_cpu_impl(const TensorCore& input)
+{
+	for (u32 i = 0; i < m_data_size; i++)
+	{
+		const DataType inputValue = input[i];
+		mOutput0[i] = inputValue;
+		mOutput1[i] = inputValue;
+	}
+}
+
+void SplitCore::backward_cpu_impl(TensorCore& input)
+{
+	for (u32 i = 0; i < m_data_size; i++)
+	{
+		input.d(i) = mOutput0.d(i) + mOutput1.d(i);
+	}
+}

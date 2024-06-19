@@ -1,5 +1,5 @@
 #pragma once
-#include "LayerBase.h"
+#include "BaseLayer.h"
 
 namespace aoba
 {
@@ -7,7 +7,7 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class  AffineCore : public  LayerBase
+			class  AffineCore : public  BaseLayer
 			{
 			public:
 				AffineCore(u32 output_size, DataType affineWeight = 0.1f);
@@ -27,8 +27,8 @@ namespace aoba
 				TensorCore& mBias;
 
 				void forward_cpu_impl(const TensorCore&);
-				void backward_cpu_impl_input(const std::shared_ptr<TensorCore>&);
-				void backward_cpu_impl_parameter(const std::shared_ptr<TensorCore>&);
+				void backward_cpu_impl_input(TensorCore&);
+				void backward_cpu_impl_parameter(const TensorCore&);
 			};
 
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "LayerBase.h"
+#include "BaseLayer.h"
 
 
 namespace aoba
@@ -9,7 +9,7 @@ namespace aoba
 		namespace layer
 		{
 
-			class SplitCore : public LayerBase
+			class SplitCore : public BaseLayer
 			{
 			public:
 				SplitCore();
@@ -18,6 +18,13 @@ namespace aoba
 			private:
 				virtual iotype forward(const iotype& input_tensors)override;
 				virtual void backward() override;
+
+				u32 m_data_size;
+				TensorCore& mOutput0;
+				TensorCore& mOutput1;
+
+				void forward_cpu_impl(const TensorCore&);
+				void backward_cpu_impl(TensorCore&);
 			};
 
 

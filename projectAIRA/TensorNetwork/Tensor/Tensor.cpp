@@ -1,4 +1,5 @@
 #include "Tensor.h"
+#include "Layer/Layer.h"
 
 namespace aoba::nn::tensor
 {

@@ -2,15 +2,11 @@
 
 namespace
 {
-	void add_forward_cpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			output_ptr[i] = input0_ptr[i] + input1_ptr[i];
-		}
-	}
-
-	__global__ void add_forward_gpu_impl(DataType* input0_ptr, DataType* input1_ptr, DataType* output_ptr, u32 data_size)
+	__global__ void forward_gpu_impl(
+		DataType* output_ptr,
+		const DataType* input0_ptr,
+		const DataType* input1_ptr,
+		const u32 data_size)
 	{
 		u32 xid = blockIdx.x * blockDim.x + threadIdx.x;
 		if (xid >= data_size)
@@ -23,22 +19,11 @@ namespace
 
 
 
-	void add_backward_cpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
-	{
-		for (u32 i = 0; i < data_size; i++)
-		{
-			if (need_grad0)
-			{
-				d_input0_ptr[i] = d_output_ptr[i];
-			}
-			if (need_grad1)
-			{
-				d_input1_ptr[i] = d_output_ptr[i];
-			}
-		}
-	}
-
-	__global__ void add_backward_gpu_impl(DataType* d_input0_ptr, bool need_grad0, DataType* d_input1_ptr, bool need_grad1, DataType* d_output_ptr, u32 data_size)
+	__global__ void backward_gpu_impl_both(
+		DataType* inputL_grad,
+		DataType* inputR_grad,
+		const DataType* output_grad,
+		const u32 data_size)
 	{
 		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
 		if (i >= data_size)
@@ -46,15 +31,25 @@ namespace
 			return;
 		}
 
-		if (need_grad0)
-		{
-			d_input0_ptr[i] = d_output_ptr[i];
-		}
-		if (need_grad1)
-		{
-			d_input1_ptr[i] = d_output_ptr[i];
-		}
+		const DataType gradValue = output_grad[i];
+		inputL_grad[i] = gradValue;
+		inputR_grad[i] = gradValue;
 	}
+
+	__global__ void backward_gpu_impl_oneside(
+		DataType* input_grad,
+		const DataType* output_grad,
+		const u32 data_size)
+	{
+		u32 i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= data_size)
+		{
+			return;
+		}
+
+		input_grad[i] = output_grad[i];
+	}
+
 }
 
 using namespace aoba::nn::layer;
@@ -68,72 +63,60 @@ Layer Add()
 
 
 AddCore::AddCore()
-	: LayerBase(2, 1, 1)
+	: BaseLayer(2, 1, 1)
+	, m_data_size(0)
+	, mOutput(*m_output_tensorcore_tbl[0])
 {
 }
 
 
 
-LayerBase::iotype AddCore::forward(const LayerBase::iotype& input_tensors)
+BaseLayer::iotype AddCore::forward(const BaseLayer::iotype& input_tensors)
 {
-	const auto& input_tensorcore0 = *getTensorCoreFrom(input_tensors[0]);
-	const auto& input_tensorcore1 = *getTensorCoreFrom(input_tensors[1]);
+	if (!m_init_finish)
+	{
+		initialize();
+	}
 
 
-	auto dataSize_lhs = input_tensorcore0.mDataSize;
-	auto dataSize_rhs = input_tensorcore1.mDataSize;
+	const auto& inputL = *getTensorCoreFrom(input_tensors[0]);
+	const auto& inputR = *getTensorCoreFrom(input_tensors[1]);
+
+	auto dataSize_L = inputL.getDataSize();
+	auto dataSize_R = inputR.getDataSize();
+
 
 	//形状は任意でいいが、要素数が一致していないと演算が出来ない。
-	if (dataSize_lhs != dataSize_rhs)
+	if (dataSize_L != dataSize_R)
 	{
 		std::cout << "Input tensor size between LHS & RHS is not equal@AddCore::forward" << std::endl;
 		exit(1);
 	}
 
-	//初期化が終わっていない場合、ここでインプットされたテンソルに合わせ動的に確保/初期化を行う。
-	if (!m_init_finish)
 	{
-		auto& child_tensorcore = m_output_tensorcore_tbl[0];
-		genDownStreamTensor(0);
+		m_data_size = dataSize_L;
 
-
-		if (input_tensorcore0.m_on_cuda)
-		{
-			m_on_cuda = true;
-			child_tensorcore->to_cuda();
-		}
-		m_init_finish = true;
+		mOutput.reshapeAs(inputL, inputL.isOnCuda());
 	}
 
-	const auto& child_tensorcore = *m_output_tensorcore_tbl[0];
-
-	auto dataSize = child_tensorcore.mDataSize;
-	if (dataSize_lhs != dataSize_rhs || dataSize != dataSize_lhs)
-	{
-		std::cout << "Input tensor size between LHS & RHS & Output is not match." << std::endl;
-		exit(1);
-	}
-
-
-
-	std::cout << "Add forward " << (m_on_cuda ? "On GPU" : "on CPU") << std::endl;
 	if (m_on_cuda)
 	{
-		auto input_address0 = input_tensorcore0._m_gpu_data_address;
-		auto input_address1 = input_tensorcore1._m_gpu_data_address;
-		auto output_address = child_tensorcore._m_gpu_data_address;
+		auto inputL_gpu_address = inputL.getGpuDataAddress();
+		auto inputR_gpu_address = inputR.getGpuDataAddress();
+		auto output_gpu_address = mOutput.getGpuDataAddress();
 
 		dim3 block(256);
-		dim3 grid((dataSize + block.x - 1) / block.x);
-		add_forward_gpu_impl << <grid, block >> > (input_address0, input_address1, output_address, dataSize);
+		dim3 grid((m_data_size + block.x - 1) / block.x);
+		forward_gpu_impl << <grid, block >> > (
+			output_gpu_address,
+			inputL_gpu_address,
+			inputR_gpu_address,
+			m_data_size);
 		CUDA_SYNCHRONIZE_DEBUG;
 	}
 	else
 	{
-		auto input_address0 = input_tensorcore0._m_cpu_data_address;
-		auto input_address1 = input_tensorcore1._m_cpu_data_address;
-		auto output_address = child_tensorcore._m_cpu_data_address;
-		add_forward_cpu_impl(input_address0, input_address1, output_address, dataSize);
+		forward_cpu_impl(inputL, inputR);
 	}
 
 	return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
@@ -143,34 +126,44 @@ LayerBase::iotype AddCore::forward(const LayerBase::iotype& input_tensors)
 
 void AddCore::backward()
 {
-	std::cout << "Add backward" << std::endl;
-	if (std::shared_ptr<TensorCore> input_tensor_core0 = mInputTensorCoreTbl[0].lock())
+	if (const std::shared_ptr<TensorCore>& inputL_tensorcore_ptr = mInputTensorCoreTbl[0].lock())
 	{
-		if (std::shared_ptr<TensorCore> input_tensor_core1 = mInputTensorCoreTbl[1].lock())
+		if (const std::shared_ptr<TensorCore>& inputR_tensorcore_ptr = mInputTensorCoreTbl[1].lock())
 		{
-			bool need_grad0 = input_tensor_core0->m_grad_required;
-			bool need_grad1 = input_tensor_core1->m_grad_required;
-			if (need_grad0 || need_grad1)/*どちらも勾配不要な状況なら逆伝搬をスキップできる*/
-			{
+			TensorCore& inputL = *inputL_tensorcore_ptr;
+			TensorCore& inputR = *inputR_tensorcore_ptr;
 
-				auto dataSize = m_output_tensorcore_tbl[0]->mDataSize;
+
+			bool inputL_requires_grad = inputL.requiresGrad();
+			bool inputR_requires_grad = inputR.requiresGrad();
+			if (!inputL_requires_grad && !inputR_requires_grad)/*どちらも勾配不要な状況なら逆伝搬をスキップできる*/
+			{
 				if (m_on_cuda)
 				{
-					auto output_address = m_output_tensorcore_tbl[0]->_m_gpu_grad_data_address;
-					auto input_address0 = input_tensor_core0->_m_gpu_grad_data_address;
-					auto input_address1 = input_tensor_core1->_m_gpu_grad_data_address;
+					auto output_gpu_grad_address = mOutput.getGpuGradDataAddress();
+					auto inputL_gpu_grad_address = inputL.getGpuGradDataAddress();
+					auto inputR_gpu_grad_address = inputR.getGpuGradDataAddress();
 
-					dim3 block(256);
-					dim3 grid((dataSize + block.x - 1) / block.x);
-					add_backward_gpu_impl << <grid, block >> > (input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					dim3 block(32);
+					dim3 grid((m_data_size + block.x - 1) / block.x);
+
+					if (inputL_requires_grad && inputR_requires_grad)
+					{
+						backward_gpu_impl_both<<<grid, block>>>(inputL_gpu_grad_address, inputR_gpu_grad_address, output_gpu_grad_address, m_data_size);
+					}
+					else if (inputL_requires_grad && !inputR_requires_grad)
+					{
+						backward_gpu_impl_oneside << <grid, block >> > (inputL_gpu_grad_address, output_gpu_grad_address, m_data_size);
+					}
+					else if (!inputL_requires_grad && inputR_requires_grad)
+					{
+						backward_gpu_impl_oneside << <grid, block >> > (inputR_gpu_grad_address, output_gpu_grad_address, m_data_size);
+					}
 					CUDA_SYNCHRONIZE_DEBUG;
 				}
 				else
 				{
-					auto output_address = m_output_tensorcore_tbl[0]->_m_cpu_grad_data_address;
-					auto input_address0 = input_tensor_core0->_m_cpu_grad_data_address;
-					auto input_address1 = input_tensor_core1->_m_cpu_grad_data_address;
-					add_backward_cpu_impl(input_address0, need_grad0, input_address1, need_grad1, output_address, dataSize);
+					backward_cpu_impl(inputL, inputR);
 				}
 			}
 		}
@@ -187,3 +180,44 @@ void AddCore::backward()
 	}
 }
 
+
+void AddCore::forward_cpu_impl(const TensorCore& inputL, const TensorCore& inputR)
+{
+	for (u32 i = 0; i < m_data_size; i++)
+	{
+		mOutput[i] = inputL[i] + inputR[i];
+	}
+}
+
+void AddCore::backward_cpu_impl(TensorCore& inputL, TensorCore& inputR)
+{
+	bool inputL_need_grad = inputL.requiresGrad();
+	bool inputR_need_grad = inputR.requiresGrad();
+
+	if (inputL_need_grad && inputR_need_grad)
+	{
+		for (u32 i = 0; i < m_data_size; i++)
+		{
+			const DataType gradValue = mOutput.d(i);
+			inputL.d(i) =gradValue;
+			inputR.d(i) =gradValue;
+		}
+	}
+	else if (inputL_need_grad && !inputR_need_grad)
+	{
+		for (u32 i = 0; i < m_data_size; i++)
+		{
+			inputL.d(i) = mOutput.d(i);
+		}
+	}
+	else if (!inputL_need_grad && inputR_need_grad)
+	{
+		for (u32 i = 0; i < m_data_size; i++)
+		{
+			inputR.d(i) = mOutput.d(i);
+		}
+	}
+	else
+	{
+	}
+}

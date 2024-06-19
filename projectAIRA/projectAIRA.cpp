@@ -15,13 +15,14 @@
 #include "gpu-manager.h"
 #include "Optimizer/SGD.h"
 #include "helper.h"
+#include <Layer/Split.h>
 
 using namespace aoba::nn;
 using namespace layer;
 using namespace optimizer;
 using namespace tensor;
 
-std::tuple<Tensor, Tensor> convert(const LayerBase::iotype& tensor_vec)
+std::tuple<Tensor, Tensor> convert(const BaseLayer::iotype& tensor_vec)
 {
 	if (tensor_vec.size() != 2)
 	{
@@ -254,21 +255,25 @@ void check_ReLU()
 }
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
 
-class MyLayer : public nnModule
-{
-public:
-	MyLayer()
-	{
-		seq = aoba::nn::layer::Sequential(ReLU(), ReLU());
-	}
-
-	iotype forward(const iotype& input) override
-	{
-		return seq(input);
-	}
-
-	aoba::nn::layer::Layer seq;
-};
+//class MyLayer : public nnModule
+//{
+//public:
+//	MyLayer()
+//	{
+//		mlayer["Split"] = Split().getLayerCore();
+//		mlayer["Add"] = Add().getLayerCore();
+//		mlayer["seq0"] = Sequential(Affine(100), ReLU(), Affine(10)).getLayerCore();
+//		mlayer["seq1"] = Sequential(Affine(10)).getLayerCore();
+//	}
+//
+//	iotype forward(const iotype& input) override
+//	{
+//		auto s0 = mlayer["Split"](input);
+//		return seq(input);
+//	}
+//
+//	aoba::nn::layer::Layer seq;
+//};
 
 
 
@@ -457,40 +462,65 @@ int main()
 	check_ReLU();
 	//return 1;
 	////テスト8
+	//{
+	//	auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+	//	//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
+	//	//auto seq = Sequential(Affine(10));
+	//	//auto affine0 = Affine(100);
+	//	//auto relu = ReLU();
+	//	//auto affine1 = Affine(10);
+
+	//	auto lossFunc = CrossEntropyWithSM();
+	//	auto optim = Optimizer::SGD(0.001f);
+	//	optim(seq);
+	//	std::cout << "===============================" << std::endl;
+	//	std::cout << "Test8" << std::endl;
+	//	std::cout << "===============================" << std::endl;
+	//	bool on_cuda = true;
+	//	for (u32 i = 0; i < 1000; i++)
+	//	{
+	//		std::cout << "-------------------------------" << std::endl;
+	//		std::cout << "Loop : " << i << std::endl;
+	//		std::cout << "-------------------------------" << std::endl;
+
+	//		DataType average_prob = 0.0f;
+	//		for (u32 Bn = 0; Bn < batched_data_num; Bn++)
+	//		{
+	//			Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(on_cuda);
+	//			Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(on_cuda);
+	//			auto t = seq(training_tensor);
+	//			auto loss = lossFunc(t[0], correct_tensor);
+	//			loss[0].synchronize_from_GPU_to_CPU();
+	//			auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
+	//			average_prob = (average_prob * Bn + prob) / (Bn + 1);
+	//			//std::cout << prob * 100 << std::endl;
+	//			loss[0].backward();
+	//			optim.optimize();
+
+	//			progressBar(Bn, batched_data_num, average_prob * 100);
+	//		}
+	//		std::cout << std::endl;
+	//	}
+	//}
+
+	//テスト9
 	{
-		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		auto seq = Sequential(Affine(50), ReLU(), Affine(10));
+		auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		
+		
+		//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
 		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
 		//auto affine1 = Affine(10);
 
 		auto lossFunc = CrossEntropyWithSM();
-		auto optim = Optimizer::SGD(0.001f);
+		auto optim =SGD(0.001f);
 		optim(seq);
 		std::cout << "===============================" << std::endl;
-		std::cout << "Test8" << std::endl;
+		std::cout << "Test9" << std::endl;
 		std::cout << "===============================" << std::endl;
-#if 0
-		for (u32 i = 0; i < 1000; i++)
-		{
-			std::cout << "-------------------------------" << std::endl;
-			std::cout << "Loop : " << i << std::endl;
-			std::cout << "-------------------------------" << std::endl;
-			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
-			{
-				Tensor& training_tensor = input_tensor_tbl[Bn];  //training_tensor.to_cuda("");
-				Tensor& correct_tensor = correct_tensor_tbl[Bn]; //correct_tensor.to_cuda("");
-				auto t = seq(training_tensor);
-				auto loss = lossFunc(t[0], correct_tensor);
-				auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
-				std::cout << prob * 100 << std::endl;
-				loss[0].backward();
-				optim.optimize();
-			}
-		}
-#else
-
+		bool on_cuda = true;
 		for (u32 i = 0; i < 1000; i++)
 		{
 			std::cout << "-------------------------------" << std::endl;
@@ -500,12 +530,12 @@ int main()
 			DataType average_prob = 0.0f;
 			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
 			{
-				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(true);
-				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(true);
+				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(on_cuda);
+				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(on_cuda);
 				auto t = seq(training_tensor);
 				auto loss = lossFunc(t[0], correct_tensor);
 				loss[0].synchronize_from_GPU_to_CPU();
-				auto prob = Optimizer::convert_loss_to_prob(loss[0](0));
+				auto prob =BaseOptimizer::convert_loss_to_prob(loss[0](0));
 				average_prob = (average_prob * Bn + prob) / (Bn + 1);
 				//std::cout << prob * 100 << std::endl;
 				loss[0].backward();
@@ -515,9 +545,7 @@ int main()
 			}
 			std::cout << std::endl;
 		}
-#endif
 	}
-
 	////テスト9
 	{
 		//auto seq = Sequential(Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));

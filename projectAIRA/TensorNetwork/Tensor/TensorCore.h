@@ -4,27 +4,13 @@
 #include <memory>
 #include <vector>
 #include <iostream>
-#include "typeinfo.h"
 #include <cassert>
-#include "Layer/LayerBase.h"
+#include "typeinfo.h"
+#include "Layer/BaseLayer.h"
 
-#define CHECK(call)                                                            \
-{                                                                              \
-    const cudaError_t error = call;                                            \
-    if (error != cudaSuccess)                                                  \
-    {                                                                          \
-        fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);                 \
-        fprintf(stderr, "code: %d, reason: %s\n", error,                       \
-                cudaGetErrorString(error));                                    \
-        exit(1);                                                               \
-    }                                                                          \
-}
 
-#ifdef _DEBUG
-#define CUDA_SYNCHRONIZE_DEBUG CHECK(cudaDeviceSynchronize())
-#else
-#define CUDA_SYNCHRONIZE_DEBUG {}
-#endif
+
+
 
 
 
@@ -55,16 +41,7 @@ class aoba::nn::tensor::TensorCore
 {
 public:
 	friend class tensor::Tensor;
-	friend class optimizer::Optimizer;
-
-	friend class layer::LayerBase;
-	//friend class layer::ReLUCore;
-	friend class layer::AffineCore;
-	friend class layer::AddCore;
-	friend class layer::SplitCore;
-	friend class layer::SequentialCore;
-	friend class layer::CrossEntropyWithSMCore;
-
+	friend class layer::BaseLayer;//NN層は出力テンソルを生成するが、特別な操作を要するため他に利用されないようにフレンド属性を与える。
 
 	/// <summary>
 	/// 全てのメンバ変数を未初期化の状態に留める。
@@ -115,6 +92,16 @@ public:
 	DataType  d(u32) const;
 	DataType& d(u32);
 
+	u32 getBatchSize() const
+	{
+		return mBatchSize;
+	}
+
+	u32 getCHW() const
+	{
+		return mCHW;
+	}
+
 	u32 getDataSize() const
 	{
 		return mDataSize;
@@ -125,7 +112,7 @@ public:
 		return m_on_cuda;
 	}
 
-	bool isGradRequired() const
+	bool requiresGrad() const
 	{
 		return m_grad_required;
 	}
@@ -150,7 +137,10 @@ public:
 		return _m_gpu_grad_data_address;
 	}
 
-	//DataType* 
+	void synchronize_from_GPU_to_CPU();
+	void synchronize_from_CPU_to_GPU();
+
+	
 
 private:
 	/*0000000000000000000000000000000000000000000000000000000000000000000*/
@@ -187,24 +177,21 @@ private:
 
 	//親(上流層)を把握しておく
 	//backwardの処理で必要。
-	std::weak_ptr<layer::LayerBase> _m_upstream_layer;
+	std::weak_ptr<layer::BaseLayer> _m_upstream_layer;
 	s32 _m_location_in_upstream_layer = -1;
 	bool m_upstream_exist = false;/*層に紐づく場合のみtrueになり、かつその場合のみ、逆伝搬が走る。*/
 
 	//下流層の情報
 	//自分がある層にインプットされた時に、どの層の何番目のインプットに
 	// 結合されたかを登録しておく。
-	std::shared_ptr<layer::LayerBase> _m_downstream_layer;
+	std::shared_ptr<layer::BaseLayer> _m_downstream_layer;
 	s32 _m_location_in_downstream_layer = -1;
 
 
 	/*1111111111111111111111111111111111111111111111111111111111111111111*/
-
-	void synchronize_from_GPU_to_CPU();
-	void synchronize_from_CPU_to_GPU();
 	void disconnect_bidirection();
-	void connect(const std::shared_ptr<layer::LayerBase>&, u32);
-	void regist_upstream_layer(const std::shared_ptr<layer::LayerBase>&);
+	void connect(const std::shared_ptr<layer::BaseLayer>&, u32);
+	void regist_upstream_layer(const std::shared_ptr<layer::BaseLayer>&);
 
 	bool isSameShape(const TensorCore&);
 	bool isSameShape(Dimension, u32 batchSize, u32 channel, u32 height, u32 width);

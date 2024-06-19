@@ -1,6 +1,7 @@
 #include "TensorCore.h"
 #include "Tensor.h"
-#include "Layer/LayerBase.h"
+#include "Layer/BaseLayer.h"
+#include "Layer/Layer.h"
 
 namespace
 {
@@ -425,9 +426,9 @@ void TensorCore::callBackward() const
 {
 	if (m_upstream_exist)
 	{
-		if (std::shared_ptr<layer::LayerBase> parentLayerCore = _m_upstream_layer.lock())
+		if (std::shared_ptr<layer::BaseLayer> parentBaseLayer = _m_upstream_layer.lock())
 		{
-			parentLayerCore->callBackward(_m_location_in_upstream_layer);
+			parentBaseLayer->callBackward(_m_location_in_upstream_layer);
 		}
 		else
 		{
@@ -443,7 +444,7 @@ void TensorCore::callBackward() const
 
 
 
-void TensorCore::regist_upstream_layer(const std::shared_ptr<layer::LayerBase>& parent_layercore)
+void TensorCore::regist_upstream_layer(const std::shared_ptr<layer::BaseLayer>& parent_layercore)
 {
 	_m_upstream_layer = parent_layercore;
 	m_upstream_exist = true;
@@ -987,7 +988,7 @@ void TensorCore::synchronize_from_CPU_to_GPU()
 	CUDA_SYNCHRONIZE_DEBUG;
 }
 
-void TensorCore::connect(const std::shared_ptr<layer::LayerBase>& layercore, u32 location)
+void TensorCore::connect(const std::shared_ptr<layer::BaseLayer>& layercore, u32 location)
 {
 	_m_downstream_layer = layercore;
 	_m_location_in_downstream_layer = location;

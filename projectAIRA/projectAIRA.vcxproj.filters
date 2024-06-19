@@ -54,11 +54,14 @@
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp">
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
     </ClCompile>
-    <ClCompile Include="TensorNetwork\Layer\LayerSkeleton.cpp">
+    <ClCompile Include="TensorNetwork\Layer\BaseLayer.cpp">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </ClCompile>
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp">
       <Filter>ソース ファイル\TensorNetwork\Tensor</Filter>
+    </ClCompile>
+    <ClCompile Include="TensorNetwork\Optimizer\BaseOptimizer.cpp">
+      <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -71,7 +74,7 @@
     <ClInclude Include="TensorNetwork\Tensor\Tensor.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Tensor</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\LayerBase.h">
+    <ClInclude Include="TensorNetwork\Layer\BaseLayer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
@@ -110,7 +113,7 @@
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer\Loss</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Optimizer\Optimizer.h">
+    <ClInclude Include="TensorNetwork\Optimizer\BaseOptimizer.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
     </ClInclude>
     <ClInclude Include="TensorNetwork\Optimizer\SGD.h">
@@ -141,9 +144,6 @@
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\CrossEntropyWithSM.cu">
       <Filter>ソース ファイル\TensorNetwork\Layer\Loss</Filter>
-    </CudaCompile>
-    <CudaCompile Include="TensorNetwork\Optimizer\Optimizer.cu">
-      <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu">
       <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>

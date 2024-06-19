@@ -133,7 +133,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp" />
-    <ClCompile Include="TensorNetwork\Layer\LayerSkeleton.cpp" />
+    <ClCompile Include="TensorNetwork\Layer\BaseLayer.cpp" />
+    <ClCompile Include="TensorNetwork\Optimizer\BaseOptimizer.cpp" />
     <ClCompile Include="TensorNetwork\Tensor\Tensor.cpp" />
     <ClCompile Include="TensorNetwork\Tensor\TensorCore.cpp" />
   </ItemGroup>
@@ -147,13 +148,13 @@
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
     <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
-    <ClInclude Include="TensorNetwork\Layer\LayerBase.h" />
+    <ClInclude Include="TensorNetwork\Layer\BaseLayer.h" />
     <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\ReLU.h" />
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />
-    <ClInclude Include="TensorNetwork\Optimizer\Optimizer.h" />
+    <ClInclude Include="TensorNetwork\Optimizer\BaseOptimizer.h" />
     <ClInclude Include="TensorNetwork\Optimizer\SGD.h" />
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h" />
     <ClInclude Include="TensorNetwork\Tensor\Tensor.h" />
@@ -168,7 +169,6 @@
     <CudaCompile Include="TensorNetwork\Layer\L2Loss.cu" />
     <CudaCompile Include="TensorNetwork\Layer\ReLU.cu" />
     <CudaCompile Include="TensorNetwork\Layer\Split.cu" />
-    <CudaCompile Include="TensorNetwork\Optimizer\Optimizer.cu" />
     <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

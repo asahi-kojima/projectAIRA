@@ -46,7 +46,7 @@ Layer aoba::nn::layer::ReLU()
 }
 
 ReLUCore::ReLUCore()
-	: LayerBase(1, 1, 1)
+	: BaseLayer(1, 1, 1)
 	, mDataSize(0)
 	, mOutput(*m_output_tensorcore_tbl[0])
 	, mMask(false)
@@ -54,7 +54,7 @@ ReLUCore::ReLUCore()
 }
 
 
-LayerBase::iotype ReLUCore::forward(const LayerBase::iotype& input_tensors)
+BaseLayer::iotype ReLUCore::forward(const BaseLayer::iotype& input_tensors)
 {
 	if (!m_init_finish)
 	{
@@ -103,10 +103,10 @@ LayerBase::iotype ReLUCore::forward(const LayerBase::iotype& input_tensors)
 
 void ReLUCore::backward()
 {
-	if (std::shared_ptr<TensorCore> input_tensor_core = mInputTensorCoreTbl[0].lock())
+	if (const std::shared_ptr<TensorCore>& input_tensor_core = mInputTensorCoreTbl[0].lock())
 	{
 		TensorCore& input = *input_tensor_core;
-		if (input.isGradRequired())
+		if (input.requiresGrad())
 		{
 			auto& input_tensorcore = *input_tensor_core;
 			if (m_on_cuda)

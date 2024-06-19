@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "LayerBase.h"
+#include "BaseLayer.h"
 #include "Layer.h"
 
 namespace aoba
@@ -9,11 +9,11 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class SequentialCore : public LayerBase
+			class SequentialCore : public BaseLayer
 			{
 			public:
 				template <typename ... Args>
-				SequentialCore(Args ... args) : LayerBase(1, 1)
+				SequentialCore(Args ... args) : BaseLayer(1, 1)
 				{
 					//可変長テンプレートなので、分解してinnerModuleに格納している。
 					Layer layer_tbl[] = { args... };
@@ -29,7 +29,7 @@ namespace aoba
 							exit(1);
 						}
 
-						mlayer[std::to_string(i)] = layer_tbl[i].getLayerCore();
+						mlayer[std::to_string(i)] = layer_tbl[i];
 					}
 				}
 
@@ -42,7 +42,7 @@ namespace aoba
 					iotype tensor = input;
 					for (u32 i = 0, end = mlayer.size(); i < end; i++)
 					{
-						tensor = mlayer[std::to_string(i)]->callForward(tensor);
+						tensor = mlayer[std::to_string(i)](tensor);
 					}
 					return tensor;
 				}

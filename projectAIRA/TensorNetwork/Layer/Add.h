@@ -1,5 +1,5 @@
 #pragma once
-#include "LayerBase.h"
+#include "BaseLayer.h"
 #include "Layer.h"
 
 namespace aoba
@@ -8,7 +8,7 @@ namespace aoba
 	{
 		namespace layer
 		{
-			class AddCore : public LayerBase
+			class AddCore : public BaseLayer
 			{
 			public:
 				AddCore();
@@ -17,23 +17,29 @@ namespace aoba
 			private:
 				virtual iotype forward(const iotype& input_tensors) override;
 				virtual void backward() override;
+
+				TensorCore& mOutput;
+				u32 m_data_size;
+
+				void forward_cpu_impl(const TensorCore&, const TensorCore&);
+				void backward_cpu_impl( TensorCore&,  TensorCore&);
 			};
 			
 			
 			Layer Add();
 
 
-			class AddAsInnerCore : public LayerBase
+			class AddAsInnerCore : public BaseLayer
 			{
 			public:
-				AddAsInnerCore() : LayerBase(2, 1)
+				AddAsInnerCore() : BaseLayer(2, 1)
 				{
-					mlayer["add"] = Add().getLayerCore();
+					mlayer["add"] = Add();
 				}
 
 				virtual iotype forward(const iotype& input_tensors) override
 				{
-					return mlayer["add"]->callForward(input_tensors);
+					return mlayer["add"](input_tensors);
 				}
 
 			};
