@@ -6,12 +6,6 @@
 #include <iostream>
 #include <cassert>
 #include "typeinfo.h"
-#include "Layer/BaseLayer.h"
-
-
-
-
-
 
 
 namespace aoba
@@ -20,6 +14,7 @@ namespace aoba
 	{
 		namespace layer
 		{
+			class BaseLayer;
 			class Layer;
 		}
 
@@ -31,6 +26,7 @@ namespace aoba
 		namespace tensor
 		{
 			class TensorCore;
+			class Tensor;
 		}
 	}
 }

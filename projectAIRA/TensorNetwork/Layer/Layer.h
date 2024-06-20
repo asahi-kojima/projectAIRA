@@ -1,5 +1,6 @@
 #pragma once
 #include "Tensor/Tensor.h"
+#include "BaseLayer.h"
 
 namespace aoba
 {

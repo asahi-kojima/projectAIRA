@@ -1,11 +1,11 @@
 #pragma once
 #include "TensorCore.h"
+//#include "Layer/BaseLayer.h"
 
 
 /// <summary>
 /// ユーザーにとってテンソルを扱うためのインターフェース
 /// </summary>
-
 namespace aoba { namespace nn { namespace tensor { class Tensor; } } }
 class aoba::nn::tensor::Tensor
 {

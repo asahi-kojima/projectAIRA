@@ -8,7 +8,7 @@
 #include <cassert>
 #include "debug-setting.h"
 #include "typeinfo.h"
-
+#include "Tensor/Tensor.h"
 
 namespace aoba
 {
@@ -40,12 +40,43 @@ namespace aoba
 
 		namespace tensor
 		{
+			class IOTensor;
 			class Tensor;
 			class TensorCore;
 		}
 	}
 }
 
+
+//class aoba::nn::tensor::IOTensor
+//{
+//public:
+//	template<typename ... Args>
+//	IOTensor(Args ... args)
+//		:mTensorTbl(0)
+//	{
+//		tensor::Tensor inputTbl[] = {args...};
+//		mInputNum = sizeof(inputTbl) / sizeof(inputTbl[0]);
+//
+//		for (u32 i = 0; i < mInputNum; i++)
+//		{
+//			mTensorTbl.push_back(inputTbl[i]);
+//		}
+//	}
+//
+//	u32 mInputNum;
+//	std::vector<tensor::Tensor> mTensorTbl;
+//
+//	//Tensor operator[](u32 index)
+//	//{
+//	//	if (index >= mInputNum)
+//	//	{
+//	//		assert(0);
+//	//	}
+//
+//	//	return mTensorTbl[index];
+//	//}
+//};
 
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。

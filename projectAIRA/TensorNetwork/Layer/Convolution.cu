@@ -16,13 +16,13 @@ namespace aoba
 	{
 		namespace layer
 		{
-			Layer Convolution(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight = 0.01f)
+			Layer Convolution(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight)
 			{
 				Layer conv = gen<ConvolutionCore>("Convolution", filterNum, filterSize, stride, padding, convWeight);
 				return conv;
 			}
 
-			Layer Convolution(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight = 0.01f)
+			Layer Convolution(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight)
 			{
 				Layer conv = gen<ConvolutionCore>("Convolution", filterNum, filterHeight, filterWidth, strideHeight, strideWidth, paddingHeight, paddingWidth, convWeight);
 				return conv;
@@ -67,6 +67,18 @@ namespace aoba
 				}
 
 				const auto& input = *getTensorCoreFrom(input_tensors[0]);
+
+				{
+					//mOutput.reshapeAs();
+				}
+
+
+				return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
+			}
+
+			void ConvolutionCore::backward()
+			{
+
 			}
 		}
 	}
