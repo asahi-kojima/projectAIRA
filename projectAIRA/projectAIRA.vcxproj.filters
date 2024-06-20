@@ -86,9 +86,6 @@
     <ClInclude Include="TensorNetwork\Layer\Add.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\AddAsInner.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
-    </ClInclude>
     <ClInclude Include="TensorNetwork\Layer\Affine.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
@@ -125,6 +122,9 @@
     <ClInclude Include="common\helper.h">
       <Filter>ヘッダー ファイル\common</Filter>
     </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\Convolution.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
@@ -147,6 +147,9 @@
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu">
       <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\Convolution.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

@@ -22,17 +22,19 @@ namespace aoba
 		namespace layer
 		{
 
+			class BaseLayer;
 			class Layer;
 
-			class BaseLayer;
-
+			//PrimitiveLayer
 			class AffineCore;
 			class ReLUCore;
 			class AddCore;
 			class SplitCore;
 			class AddAsInnerCore;
 			class SequentialCore;
+			class Convolution;
 
+			//LossFunction
 			class CrossEntropyWithSMCore;
 		}
 

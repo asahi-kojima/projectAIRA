@@ -144,8 +144,8 @@
     <ClInclude Include="common\helper.h" />
     <ClInclude Include="common\typeinfo.h" />
     <ClInclude Include="TensorNetwork\Layer\Add.h" />
-    <ClInclude Include="TensorNetwork\Layer\AddAsInner.h" />
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
+    <ClInclude Include="TensorNetwork\Layer\Convolution.h" />
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
     <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
     <ClInclude Include="TensorNetwork\Layer\BaseLayer.h" />
@@ -165,6 +165,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\Affine.cu" />
+    <CudaCompile Include="TensorNetwork\Layer\Convolution.cu" />
     <CudaCompile Include="TensorNetwork\Layer\CrossEntropyWithSM.cu" />
     <CudaCompile Include="TensorNetwork\Layer\L2Loss.cu" />
     <CudaCompile Include="TensorNetwork\Layer\ReLU.cu" />

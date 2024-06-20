@@ -6,16 +6,10 @@
 #include <fstream>
 #include <sstream>
 #include <ostream>
-#include "Layer/Add.h"
-#include "Layer/AddAsInner.h"
-#include "Layer/ReLU.h"
-#include "Layer/Affine.h"
-#include "Layer/Sequential.h"
-#include "Layer/CrossEntropyWithSM.h"
+
 #include "gpu-manager.h"
 #include "Optimizer/SGD.h"
 #include "helper.h"
-#include <Layer/Split.h>
 
 using namespace aoba::nn;
 using namespace layer;
@@ -255,26 +249,30 @@ void check_ReLU()
 }
 //111111111111111111111111111111111111111111111111111111111111111111111111111111
 
-//class MyLayer : public nnModule
-//{
-//public:
-//	MyLayer()
-//	{
-//		mlayer["Split"] = Split().getLayerCore();
-//		mlayer["Add"] = Add().getLayerCore();
-//		mlayer["seq0"] = Sequential(Affine(100), ReLU(), Affine(10)).getLayerCore();
-//		mlayer["seq1"] = Sequential(Affine(10)).getLayerCore();
-//	}
-//
-//	iotype forward(const iotype& input) override
-//	{
-//		auto s0 = mlayer["Split"](input);
-//		return seq(input);
-//	}
-//
-//	aoba::nn::layer::Layer seq;
-//};
+class MyLayer : public nnModule
+{
+public:
+	MyLayer()
+	{
+		mlayer["Split"] = Split();
+		mlayer["seq0"] = Sequential(Affine(100), ReLU(), Affine(10));
+		mlayer["seq1"] = Sequential(Affine(10));
+		mlayer["Add"] = Add();
+	}
 
+	iotype forward(const iotype& input) override
+	{
+		auto s = mlayer["Split"](input);
+		auto t0 = mlayer["seq0"](s[0]);
+		auto t1 = mlayer["seq1"](s[1]);
+		auto a = mlayer["Add"](t0[0], t1[0]);
+		return a;
+	}
+
+};
+
+
+//Layer gen<MyLayer>();
 
 
 int main()
@@ -505,8 +503,8 @@ int main()
 
 	//テスト9
 	{
-		auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		
+		//auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		auto seq = gen<MyLayer>();
 		
 		//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
 		//auto seq = Sequential(Affine(10));

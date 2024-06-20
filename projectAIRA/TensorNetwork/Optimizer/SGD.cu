@@ -42,7 +42,6 @@ namespace aoba
 
 			void SGD::optimize_unique()
 			{
-
 				for (auto iter = m_OptimizeScheduled_BaseLayer_tbl.begin(), end = m_OptimizeScheduled_BaseLayer_tbl.end(); iter != end; iter++)
 				{
 					if (const std::shared_ptr<layer::BaseLayer>& pLayercore = (*iter).lock())
