@@ -141,7 +141,9 @@ void confirm(const Tensor& tensor)
 
 void check_Affine()
 {
+	std::cout << "=======================" << std::endl;
 	std::cout << "Affine Debug" << std::endl;
+	std::cout << "=======================" << std::endl;
 	auto affine4GPU = Affine(100);
 	auto affine4CPU = Affine(100);
 
@@ -193,9 +195,67 @@ void check_Affine()
 	}
 }
 
+void check_Conv()
+{
+	std::cout << "=======================" << std::endl;
+	std::cout << "Convolution Debug" << std::endl;
+	std::cout << "=======================" << std::endl;
+	auto conv4GPU = Convolution(3, 4, 2, 2);
+	auto conv4CPU = Convolution(3, 4, 2, 2);
+
+	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
+	init_linear(testTensor4GPU, 1);
+	testTensor4GPU.to_cuda(true);
+	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
+	init_linear(testTensor4CPU, 1);
+
+	auto outGPU = conv4GPU(testTensor4GPU);
+	auto outCPU = conv4CPU(testTensor4CPU);
+	outGPU[0].synchronize_from_GPU_to_CPU();
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		auto cpuValue = outCPU[0](i);
+		auto gpuValue = outGPU[0](i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		outCPU[0].d(i) = i;
+		outGPU[0].d(i) = i;
+	}
+	outGPU[0].synchronize_from_CPU_to_GPU();
+
+	outCPU[0].backward();
+	outGPU[0].backward();
+
+	testTensor4GPU.synchronize_from_GPU_to_CPU();
+	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
+	{
+		auto cpuValue = testTensor4CPU.d(i);
+		auto gpuValue = testTensor4GPU.d(i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+}
+
 void check_ReLU()
 {
+	std::cout << "=======================" << std::endl;
 	std::cout << "ReLU Debug" << std::endl;
+	std::cout << "=======================" << std::endl;
 	auto relu4GPU = ReLU();
 	auto relu4CPU = ReLU();
 
@@ -291,7 +351,7 @@ int main()
 	std::vector<Tensor> input_tensor_tbl(batched_data_num);
 	for (auto& v : input_tensor_tbl)
 	{
-		v = Tensor(batch_size, dataSize);
+		v = Tensor(batch_size, 1,28, 28);
 	}
 	std::vector<Tensor> correct_tensor_tbl(batched_data_num);
 	for (auto& v : correct_tensor_tbl)
@@ -458,6 +518,8 @@ int main()
 	//
 	check_Affine();
 	check_ReLU();
+	check_Conv();
+	//return 1;
 	//return 1;
 	////テスト8
 	//{
@@ -504,9 +566,9 @@ int main()
 	//テスト9
 	{
 		//auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-		auto seq = gen<MyLayer>();
+		//auto seq = gen<MyLayer>();
 		
-		//auto seq = Sequential(Affine(50), ReLU(), Affine(10));
+		auto seq = Sequential(Convolution(3, 4, 2, 2), ReLU(), Convolution(3, 4, 2, 2), ReLU(), Affine(10));
 		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
@@ -518,7 +580,7 @@ int main()
 		std::cout << "===============================" << std::endl;
 		std::cout << "Test9" << std::endl;
 		std::cout << "===============================" << std::endl;
-		bool on_cuda = true;
+		bool on_cuda = false;
 		for (u32 i = 0; i < 1000; i++)
 		{
 			std::cout << "-------------------------------" << std::endl;

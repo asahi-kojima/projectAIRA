@@ -5,11 +5,11 @@ namespace
 {
 
 
-	__global__ void affine_forward_gpu_impl(
-		f32* y,
-		const f32* x,
-		const f32* A,
-		const f32* b,
+	__global__ void forward_gpu_impl(
+		DataType* y,
+		const DataType* x,
+		const DataType* A,
+		const DataType* b,
 		const u32 batchSize,
 		const u32 outputSize,
 		const u32 inputSize)
@@ -32,7 +32,7 @@ namespace
 		y[index] = result + b[O];
 	}
 
-	__global__ void affine_backward_gpu_impl_input(
+	__global__ void backward_gpu_impl_input(
 		DataType* dOut,
 		const DataType* dIn,
 		const DataType* A,
@@ -69,7 +69,7 @@ namespace
 	}
 
 	//Weightパラメータ
-	__global__ void affine_backward_gpu_impl_weight(
+	__global__ void backward_gpu_impl_weight(
 		DataType* dA,
 		const DataType* dout,
 		const DataType* input,
@@ -106,7 +106,7 @@ namespace
 	}
 
 	//Biasパラメータ
-	__global__ void affine_backward_gpu_impl_bias(
+	__global__ void backward_gpu_impl_bias(
 		DataType* dBias,
 		const DataType* output_grad,
 		const u32 batchSize,
@@ -191,7 +191,6 @@ namespace aoba
 				{
 					m_batch_size = input_batchSize;
 					m_input_size = input_chw;
-					//m_on_cuda = input_on_cuda;
 
 					//出力テンソルの形状変更
 					mOutput.reshapeAs(input_batchSize, m_output_size, input_on_cuda);
@@ -245,7 +244,7 @@ namespace aoba
 
 						dim3 block(32, 32);
 						dim3 grid((m_output_size + block.x - 1) / block.x, (m_batch_size + block.y - 1) / block.y);
-						affine_forward_gpu_impl << <grid, block >> > (
+						forward_gpu_impl << <grid, block >> > (
 							output_gpu_address,
 							input_gpu_address,
 							weight_gpu_address,
@@ -292,7 +291,7 @@ namespace aoba
 							{
 								dim3 block(16, 16);
 								dim3 grid((m_input_size + block.x - 1) / block.x, (m_output_size + block.y - 1) / block.y);
-								affine_backward_gpu_impl_weight << <grid, block >> > (
+								backward_gpu_impl_weight << <grid, block >> > (
 									weight_gpu_grad_address,
 									output_gpu_grad_address,
 									input_gpu_address,
@@ -306,7 +305,7 @@ namespace aoba
 							{
 								dim3 block(16);
 								dim3 grid((m_output_size + block.x - 1) / block.x);
-								affine_backward_gpu_impl_bias << <grid, block >> > (
+								backward_gpu_impl_bias << <grid, block >> > (
 									bias_gpu_grad_address,
 									output_gpu_grad_address,
 									m_batch_size,
@@ -326,7 +325,7 @@ namespace aoba
 						{
 							dim3 block(16, 16);
 							dim3 grid((m_input_size + block.x - 1) / block.x, (m_batch_size + block.y - 1) / block.y);
-							affine_backward_gpu_impl_input << <grid, block >> > (
+							backward_gpu_impl_input << <grid, block >> > (
 								input_gpu_grad_address,
 								output_gpu_grad_address,
 								weight_gpu_address,

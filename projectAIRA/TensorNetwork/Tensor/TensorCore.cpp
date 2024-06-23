@@ -326,32 +326,108 @@ bool TensorCore::reshapeAs(u32 batchSize, u32 width, bool on_cuda)
 
 bool TensorCore::reshapeAs(u32 batchSize, u32 height, u32 width, bool on_cuda)
 {
-	assert(0);//未実装
+	bool isInitialized = false;
 	//未初期化の場合
 	if (mDimension == Dimension::dim0)
 	{
-
+		*this = TensorCore(batchSize, height, width, m_grad_required);
+		isInitialized = true;
 	}
 	else
 	{
-
+		const u32 required_datasize = batchSize * height * width;
+		if (mDataSize == required_datasize)
+		{
+			if (!isSameShape(Dimension::dim3, batchSize, 1, height, width))
+			{
+				setNewShape(Dimension::dim3, batchSize, 1, height, width);
+			}
+		}
+		//データサイズが違う場合は再確保する
+		else
+		{
+			*this = TensorCore(batchSize, height , width, m_grad_required);
+			isInitialized = true;
+		}
 	}
 
-	return false;
+	if (on_cuda)
+	{
+		this->to_cuda();
+	}
+
+	return isInitialized;
+}
+
+bool TensorCore::reshapeExactlyAs(u32 batchSize, u32 height, u32 width, bool on_cuda)
+{
+	bool isInitialized = false;
+	//未初期化の場合
+	if (mDimension == Dimension::dim0)
+	{
+		*this = TensorCore(batchSize, height, width, m_grad_required);
+		isInitialized = true;
+	}
+	else
+	{
+		const u32 required_datasize = batchSize * height * width;
+		if (mDataSize == required_datasize)
+		{
+			if (!isSameShape(Dimension::dim3, batchSize, 1, height, width))
+			{
+				setNewShape(Dimension::dim3, batchSize, 1, height, width);
+				isInitialized = true;
+			}
+		}
+		//データサイズが違う場合は再確保する
+		else
+		{
+			*this = TensorCore(batchSize, height , width, m_grad_required);
+			isInitialized = true;
+		}
+	}
+
+	if (on_cuda)
+	{
+		this->to_cuda();
+	}
+
+	return isInitialized;
 }
 
 bool TensorCore::reshapeAs(u32 batchSize, u32 channel, u32 height, u32 width, bool on_cuda)
 {
-	assert(0);//未実装
+	bool isInitialized = false;
 	//未初期化の場合
 	if (mDimension == Dimension::dim0)
 	{
-
+		*this = TensorCore(batchSize, channel,  height,  width, m_grad_required);
+		isInitialized = true;
 	}
 	else
 	{
+		const u32 required_datasize = batchSize * channel * height * width;
+		if (mDataSize == required_datasize)
+		{
+			if (!isSameShape(Dimension::dim4, batchSize, channel, height, width))
+			{
+				setNewShape(Dimension::dim4, batchSize, channel, height, width);
+			}
+		}
+		//データサイズが違う場合は再確保する
+		else
+		{
+			*this = TensorCore(batchSize, width, m_grad_required);
+			isInitialized = true;
+		}
+	}
 
-	}	return false;
+	if (on_cuda)
+	{
+		this->to_cuda();
+	}
+
+	return isInitialized;
 }
 
 bool TensorCore::isSameShape(const TensorCore& comparison)
