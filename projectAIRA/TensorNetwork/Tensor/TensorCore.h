@@ -39,6 +39,16 @@ public:
 	friend class tensor::Tensor;
 	friend class layer::BaseLayer;//NN層は出力テンソルを生成するが、特別な操作を要するため他に利用されないようにフレンド属性を与える。
 
+	//形状に関する変数
+	enum class Dimension
+	{
+		dim0,//未初期化（デフォルトコンストラクタ呼び出し）の場合のみこれに該当
+		dim1,
+		dim2,
+		dim3,
+		dim4,
+	};
+
 	/// <summary>
 	/// 全てのメンバ変数を未初期化の状態に留める。
 	/// </summary>
@@ -55,6 +65,7 @@ public:
 	bool reshapeAs(u32 width, bool on_cuda = false);
 	bool reshapeAs(u32 batchSize, u32 width, bool on_cuda = false);
 	bool reshapeAs(u32 batchSize, u32 height, u32 width, bool on_cuda = false);
+	bool reshapeExactlyAs(u32 batchSize, u32 height, u32 width, bool on_cuda = false);
 	bool reshapeAs(u32 batchSize, u32 channel, u32 height, u32 width, bool on_cuda = false);
 
 
@@ -88,10 +99,19 @@ public:
 	DataType  d(u32) const;
 	DataType& d(u32);
 
+	Dimension getDimension() const
+	{
+		return mDimension;
+	}
+
 	u32 getBatchSize() const
 	{
 		return mBatchSize;
 	}
+
+	u32 getChannel() const { return mChannel; }
+	u32 getHeight() const { return mHeight; }
+	u32 getWidth() const { return mWidth; }
 
 	u32 getCHW() const
 	{
@@ -136,19 +156,10 @@ public:
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
 
-	
 
 private:
 	/*0000000000000000000000000000000000000000000000000000000000000000000*/
-		//形状に関する変数
-	enum class Dimension
-	{
-		dim0,//未初期化（デフォルトコンストラクタ呼び出し）の場合のみこれに該当
-		dim1,
-		dim2,
-		dim3,
-		dim4,
-	};
+
 
 	Dimension mDimension;/*何次元データかを表現*/
 	u32 mBatchSize;/*バッチサイズ*/
