@@ -113,6 +113,8 @@ public:
 	u32 getHeight() const { return mHeight; }
 	u32 getWidth() const { return mWidth; }
 
+	u32 getHW() const { return mHeight * mWidth; }
+
 	u32 getCHW() const
 	{
 		return mCHW;

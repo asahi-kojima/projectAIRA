@@ -186,13 +186,21 @@ namespace aoba
 					{
 						dim3 block(32);
 						dim3 grid((m_batch_size + block.x - 1) / block.x);
-						forward_gpu_impl_pre << <grid, block >> > (lossPerBatch_gpu_address, inference_gpu_address, correct_gpu_address, m_batch_size, m_label_num);
+						forward_gpu_impl_pre << <grid, block >> > (
+							lossPerBatch_gpu_address, 
+							inference_gpu_address, 
+							correct_gpu_address, 
+							m_batch_size, 
+							m_label_num);
 						CUDA_SYNCHRONIZE_DEBUG;
 					}
 					{
 						dim3 block(1);
 						dim3 grid(1);
-						forward_gpu_impl_sum << <grid, block >> > (output_gpu_address, lossPerBatch_gpu_address, m_batch_size);
+						forward_gpu_impl_sum << <grid, block >> > (
+							output_gpu_address, 
+							lossPerBatch_gpu_address, 
+							m_batch_size);
 						CUDA_SYNCHRONIZE_DEBUG;
 					}
 

@@ -1,23 +1,25 @@
 #pragma once
 #include "BaseLayer.h"
 
-
 namespace aoba
 {
 	namespace nn
 	{
 		namespace layer
 		{
-			class  ConvolutionCore : public  BaseLayer
+
+			class MaxPoolingCore : public BaseLayer
 			{
 			public:
-				ConvolutionCore(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 weight = 0.01f);
-				ConvolutionCore(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 weight = 0.01f);
-				~ConvolutionCore();
+				MaxPoolingCore(u32 filterSize, u32 stride, u32 padding);
+				MaxPoolingCore(
+					u32 filterHeight, u32 filterWidth, 
+					u32 strideHeight, u32 strideWidth, 
+					u32 paddingHeight, u32 paddingWidth);
+				~MaxPoolingCore();
 
 				struct parameterInfo
 				{
-					u32 Fn;
 					u32 Fh;
 					u32 Fw;
 					u32 FhFw;
@@ -40,15 +42,14 @@ namespace aoba
 					u32 Ow;
 					u32 OhOw;
 					u32 OcOhOw;
-					u32 OhOwIcFhFw;
+					//u32 OhOwIcFhFw;
 				};
+
 			private:
 				virtual iotype forward(const iotype& input_tensors) override;
 				virtual void backward() override;
 
-
 				//コンストラクタで決定できる変数
-				const u32 mFn;
 				const u32 mFh;
 				const u32 mFw;
 				const u32 mFhFw;
@@ -56,14 +57,13 @@ namespace aoba
 				const u32 mSw;
 				const u32 mPh;
 				const u32 mPw;
-				const DataType mConvolutionWeight = 0.01f;
 
+				
 				TensorCore& mOutput;
-				TensorCore& mWeight;
-				TensorCore& mBias;
 
 				//入力依存の変数
-				TensorCore mReshapedInputData;
+				//TensorCore mReshapedInputData;
+				TensorCore mMaxLocation;
 
 				u32 mBatchSize;
 				u32 mIc;
@@ -80,16 +80,13 @@ namespace aoba
 				u32 mOhOw;
 				u32 mOcOhOw;
 
-				parameterInfo* mParameterInfoOnGPU;
-				bool mIsParamerInfoAllocated = false;
 
-				//const u32 m_output_size;
-				//u32 m_batch_size;
-				//u32 m_input_size;
+				parameterInfo* mParameterInfoOnGPU;
+
+
 
 				void forward_cpu_impl(const TensorCore&);
-				void backward_cpu_impl_input(TensorCore&);
-				void backward_cpu_impl_parameter();
+				void backward_cpu_impl(TensorCore&);
 
 				void resetVariable(const TensorCore& input)
 				{
@@ -102,7 +99,7 @@ namespace aoba
 					mIhIw = mIh * mIw;
 					mIcIhIw = mIc * mIhIw;
 
-					mOc = mFn;//これはコンパイル時に決定できるので、ここではなくてもいい。
+					mOc = mIc;
 					mOh = 1 + (mIh - mFh + 2 * mPh) / mSh;
 					mOw = 1 + (mIw - mFw + 2 * mPw) / mSw;
 					mOhOw = mOh * mOw;
@@ -115,7 +112,6 @@ namespace aoba
 						parameterInfo tmp;
 
 						//コンパイル時に決定できる変数
-						tmp.Fn = mFn;
 						tmp.Fh = mFh;
 						tmp.Fw = mFw;
 						tmp.FhFw = mFhFw;
@@ -139,24 +135,16 @@ namespace aoba
 						tmp.Ow = mOw;
 						tmp.OhOw = mOhOw;
 						tmp.OcOhOw = mOc * mOhOw;
-						tmp.OhOwIcFhFw = mOhOw * mIcFhFw;
-						if (!mIsParamerInfoAllocated)
-						{
-							CHECK(cudaMalloc(&mParameterInfoOnGPU, sizeof(parameterInfo)));
-							mIsParamerInfoAllocated = true;
-						}
+						//tmp.OhOwIcFhFw = mOhOw * mIcFhFw;
+
 						CHECK(cudaMemcpy(mParameterInfoOnGPU, &tmp, sizeof(parameterInfo), cudaMemcpyHostToDevice));
 					}
 				}
-
-
-
-				
 			};
 
 
-			Layer Convolution(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight = 0.01f);
-			Layer Convolution(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight = 0.01f);
+			Layer MaxPooling(u32 filterSize, u32 stride, u32 padding);
+			Layer MaxPooling(u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth);
 		}
 	}
 }

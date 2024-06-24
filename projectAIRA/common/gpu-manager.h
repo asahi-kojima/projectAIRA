@@ -1,9 +1,14 @@
 #pragma once
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+//#include <device_functions.h>
 #include <iostream>
 #include "typeinfo.h"
 #include "debug-setting.h"
+
+#if !defined(__CUDACC__)
+#define __CUDACC__
+#endif
 
 #define LINE_WIDTH 100
 

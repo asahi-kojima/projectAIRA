@@ -277,12 +277,15 @@ namespace aoba
 				//ÉwÉãÉpÅ[
 				, mReshapedInputData(false)
 			{
-				CHECK(cudaMalloc(&mParameterInfoOnGPU, sizeof(parameterInfo)));
+				//CHECK(cudaMalloc(&mParameterInfoOnGPU, sizeof(parameterInfo)));
 			}
 
 			ConvolutionCore::~ConvolutionCore()
 			{
-				CHECK(cudaFree(mParameterInfoOnGPU));
+				if (mIsParamerInfoAllocated)
+				{
+					CHECK(cudaFree(mParameterInfoOnGPU));
+				}
 			}
 
 
@@ -329,7 +332,7 @@ namespace aoba
 					if (isInitReshapedInput)
 					{
 #ifdef _DEBUG
-						std::cout << "Convolution Reshaped Param was initialized." << std::endl;
+						std::cout << "Convolution Reshaped was initialized." << std::endl;
 #endif // _DEBUG
 						for (u32 i = 0, end = mReshapedInputData.getDataSize(); i < end; i++)
 						{
@@ -348,7 +351,7 @@ namespace aoba
 						std::normal_distribution<> dist(0.0f, std::sqrt(2.0f / mIcFhFw));
 						for (u32 i = 0, end = mWeight.getDataSize(); i < end; i++)
 						{
-							mWeight[i] =  mConvolutionWeight* static_cast<DataType>(dist(engine));
+							mWeight[i] = mConvolutionWeight * static_cast<DataType>(dist(engine));
 						}
 						mWeight.synchronize_from_CPU_to_GPU();
 					}
@@ -402,6 +405,7 @@ namespace aoba
 								weight_gpu_address,
 								bias_gpu_address,
 								mParameterInfoOnGPU);
+							CUDA_SYNCHRONIZE_DEBUG;
 						}
 					}
 					else
@@ -444,6 +448,7 @@ namespace aoba
 									output_gpu_grad_address,
 									reshapedInput_gpu_address,
 									mParameterInfoOnGPU);
+								CUDA_SYNCHRONIZE_DEBUG;
 							}
 							//bias
 							{
@@ -453,6 +458,7 @@ namespace aoba
 									bias_gpu_grad_address,
 									output_gpu_grad_address,
 									mParameterInfoOnGPU);
+								CUDA_SYNCHRONIZE_DEBUG;
 							}
 						}
 						else
@@ -474,7 +480,6 @@ namespace aoba
 								weight_gpu_address,
 								mParameterInfoOnGPU);
 							CUDA_SYNCHRONIZE_DEBUG;
-							input.synchronize_from_GPU_to_CPU();
 						}
 						else
 						{
@@ -574,7 +579,9 @@ namespace aoba
 							{
 								for (u32 hw = 0; hw < mOhOw; hw++)
 								{
-									tmp += mOutput.d(N, Oc, hw) * mReshapedInputData(N, hw, IcFhFw);
+									DataType output_grad = mOutput.d(N, Oc, hw);
+									DataType reshapedInput = mReshapedInputData(N, hw, IcFhFw);
+									tmp += output_grad * reshapedInput;
 								}
 							}
 							mWeight.d(Oc, IcFhFw) = tmp;
