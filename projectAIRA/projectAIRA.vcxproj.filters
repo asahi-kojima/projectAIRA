@@ -131,6 +131,9 @@
     <ClInclude Include="TensorNetwork\Layer\BatchNorm.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\TransposeConv.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
@@ -161,6 +164,9 @@
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\BatchNorm.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\TransposeConv.cu">
       <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
   </ItemGroup>

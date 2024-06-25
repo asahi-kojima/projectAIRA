@@ -13,6 +13,7 @@
 #include "Layer/Add.h"
 #include "Layer/Split.h"
 #include "Layer/Convolution.h"
+#include "Layer/TransposeConv.h"
 #include "Layer/MaxPooling.h"
 #include "Layer/BatchNorm.h"
 #include "Optimizer/BaseOptimizer.h"

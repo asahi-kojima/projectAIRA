@@ -103,13 +103,12 @@ namespace
 		{
 			return;
 		}
-
+		
 
 		u32 mIcIhIw = mIc * mIhIw;
 
 		DataType mean = Mean[Ic];
 		DataType sigma = Sigma[Ic];
-
 
 		//------------------------------------------------------------------
 		//標準化
@@ -157,7 +156,7 @@ namespace
 			dGamma += dO * iR;
 			dBeta += dO;
 		}
-
+		
 		blockGamma_grad[N * mIc + Ic] = dGamma;
 		blockBeta_grad[N * mIc + Ic] = dBeta;
 	}
@@ -215,7 +214,7 @@ namespace
 		{
 			return;
 		}
-
+	
 
 		const u32 index = N * mIcIhIw + Ic * mIhIw + IhIw;
 
@@ -365,7 +364,7 @@ namespace aoba
 							CUDA_SYNCHRONIZE_DEBUG;
 						}
 						{
-							dim3 block(16, 8, 8);
+							dim3 block(16, 8, 8);//ok
 							dim3 grid(
 								(mIhIw + block.x - 1) / block.x,
 								(mIc + block.y - 1) / block.y,
@@ -417,7 +416,7 @@ namespace aoba
 
 						//ブロック計算
 						{
-							dim3 block(32, 32);
+							dim3 block(32, 32);//OK
 							dim3 grid(
 								(mIc + block.x - 1) / block.x, 
 								(mBatchSize + block.y - 1) / block.y);
@@ -448,7 +447,7 @@ namespace aoba
 
 						if (input.requiresGrad())
 						{
-							dim3 block(16, 8, 8);
+							dim3 block(16, 8, 8);//OK
 							dim3 grid(
 								(mIhIw + block.x - 1) / block.x,
 								(mIc + block.y - 1) / block.y,

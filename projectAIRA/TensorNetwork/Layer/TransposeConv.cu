@@ -1,6 +1,6 @@
 #include <random>
 #include "Layer.h"
-#include "Convolution.h"
+#include "TransposeConv.h"
 
 
 namespace
@@ -8,9 +8,9 @@ namespace
 	__global__ void forward_gpu_impl_reshape(
 		DataType* reshapedData,
 		const DataType* input,
-		aoba::nn::layer::ConvolutionCore::parameterInfo* pInfo)
+		aoba::nn::layer::TransposeConvCore::parameterInfo* pInfo)
 	{
-		aoba::nn::layer::ConvolutionCore::parameterInfo& info = *pInfo;
+		aoba::nn::layer::TransposeConvCore::parameterInfo& info = *pInfo;
 
 		const u32 IcIhIw = blockIdx.x * blockDim.x + threadIdx.x;
 		const u32 N = blockIdx.y * blockDim.y + threadIdx.y;
@@ -27,40 +27,41 @@ namespace
 		//parameterInfoで決まるもの
 		const u32 mFh = info.Fh;
 		const u32 mFw = info.Fw;
-		const u32 mFhFw = info.FhFw;
+		const u32 mFhFw = mFh * mFw;
 		const u32 mSh = info.Sh;
 		const u32 mSw = info.Sw;
-
+		
+		
 		const u32 mIw = info.Iw;
-		const u32 mIcFhFw = info.IcFhFw;
 		const u32 mIhIw = info.IhIw;
+		const u32 mIcFhFw = info.IcFhFw;
 
 		const u32 mOh = info.Oh;
 		const u32 mOw = info.Ow;
 
 		const u32 mOhOwIcFhFw = info.OhOwIcFhFw;
 
-
 		//計算で決まるもの
 		const u32 Ic = IcIhIw / mIhIw;
 		const u32 Ih = (IcIhIw - Ic * mIhIw) / mIw;
 		const u32 Iw = IcIhIw % mIw;
 
-		const u32 exH = Ih + info.Ph;
-		const u32 exW = Iw + info.Pw;
 
 
 
+		const u32 exH = mFh - 1 - info.Ph + Ih * mSh;
+		const u32 exW = mFw - 1 - info.Pw + Iw * mSw;
 
 
-		DataType value = input[N * mIcIhIw + IcIhIw];
 
-		for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / mSh), endOh = min(1 + (exH / mSh), mOh); Oh < endOh; Oh++)
+		f32 value = input[N * mIcIhIw + IcIhIw];
+
+		for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / 1), endOh = min(1 + (exH / 1), mOh); Oh < endOh; Oh++)
 		{
-			for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / mSw), endOw = min(1 + (exW / mSw), mOw); Ow < endOw; Ow++)
+			for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / 1), endOw = min(1 + (exW / 1), mOw); Ow < endOw; Ow++)
 			{
 				const u32 row = Oh * mOw + Ow;
-				const u32 col = Ic * mFhFw + (exH - Oh * mSh) * mFw + (exW - Ow * mSw);
+				const u32 col = Ic * mFhFw + (exH - Oh * 1) * mFw + (exW - Ow * 1);
 				reshapedData[N * mOhOwIcFhFw + row * mIcFhFw + col] = value;
 			}
 		}
@@ -72,9 +73,9 @@ namespace
 		const DataType* reshapedInput,
 		const DataType* weight,
 		const DataType* bias,
-		aoba::nn::layer::ConvolutionCore::parameterInfo* pInfo)
+		aoba::nn::layer::TransposeConvCore::parameterInfo* pInfo)
 	{
-		aoba::nn::layer::ConvolutionCore::parameterInfo& info = *pInfo;
+		aoba::nn::layer::TransposeConvCore::parameterInfo& info = *pInfo;
 
 		const u32 OcOhOw = blockIdx.x * blockDim.x + threadIdx.x;
 		const u32 N = blockIdx.y * blockDim.y + threadIdx.y;
@@ -86,15 +87,14 @@ namespace
 		{
 			return;
 		}
-	
-		const u32 id = N * mOcOhOw + OcOhOw;
+
 
 		const u32 mOhOw = info.OhOw;
-		const u32 mIcFhFw = info.IcFhFw;
-		const u32 mOhOwIcFhFw = info.OhOwIcFhFw;
-
 		const u32 mFc = OcOhOw / mOhOw;
 		const u32 OhOw = OcOhOw - mFc * mOhOw;
+
+		const u32 mIcFhFw = info.IcFhFw;
+		const u32 mOhOwIcFhFw = info.OhOwIcFhFw;
 
 		f32 result = 0.0f;
 		for (u32 i = 0; i < mIcFhFw; i++)
@@ -102,8 +102,8 @@ namespace
 
 			result += weight[mFc * mIcFhFw + i] * reshapedInput[N * mOhOwIcFhFw + OhOw * mIcFhFw + i];
 		}
-
-		y[id] = result + bias[mFc];
+		
+		y[N * mOcOhOw + OcOhOw] = result + bias[mFc];
 	}
 
 
@@ -111,35 +111,24 @@ namespace
 		DataType* input_grad,
 		const DataType* output_grad,
 		const DataType* weight,
-		const aoba::nn::layer::ConvolutionCore::parameterInfo* pInfo)
+		const aoba::nn::layer::TransposeConvCore::parameterInfo* pInfo)
 	{
-		const aoba::nn::layer::ConvolutionCore::parameterInfo& info = *pInfo;
+		const aoba::nn::layer::TransposeConvCore::parameterInfo& info = *pInfo;
 
 
-		u32 IcIhIw = blockIdx.x * blockDim.x + threadIdx.x;//input
-		u32 N = blockIdx.y * blockDim.y + threadIdx.y;//batch
+		const u32 IcIhIw = blockIdx.x * blockDim.x + threadIdx.x;//input
+		const u32 N = blockIdx.y * blockDim.y + threadIdx.y;//batch
 
 		const u32 mBatchSize = info.batchSize;
 		const u32 mIcIhIw = info.IcIhIw;
+		
+
 		if (N >= mBatchSize || IcIhIw >= mIcIhIw)
 		{
 			return;
 		}
 
-		u32 id = N * mIcIhIw + IcIhIw;
 
-		const u32 mIhIw = info.IhIw;
-		const u32 mIw = info.Iw;
-
-		const u32 c = IcIhIw / mIhIw;
-		const u32 h = (IcIhIw - c * mIhIw) / mIw;
-		const u32 w = IcIhIw % mIw;
-
-		const u32 exH = h + info.Ph;
-		const u32 exW = w + info.Pw;
-
-		const u32 mOh = info.Oh;
-		const u32 mOw = info.Ow;
 		const u32 mFh = info.Fh;
 		const u32 mFw = info.Fw;
 		const u32 mFhFw = info.FhFw;
@@ -147,17 +136,30 @@ namespace
 		const u32 mSh = info.Sh;
 		const u32 mSw = info.Sw;
 
+		const u32 mIw = info.Iw;
+		const u32 mIhIw = info.IhIw;
+
+		const u32 Ic = IcIhIw / mIhIw;
+		const u32 Ih = (IcIhIw - Ic * mIhIw) / mIw;
+		const u32 Iw = IcIhIw % mIw;
+
+		const u32 mOh = info.Oh;
+		const u32 mOw = info.Ow;
+
 		const u32 mOcOhOw = info.OcOhOw;
 		const u32 mOhOw = info.OhOw;
 		const u32 mIcFhFw = info.IcFhFw;
 
+		const u32 exH = mFh - 1 - info.Ph + Ih * mSh;
+		const u32 exW = mFw - 1 - info.Pw + Iw * mSw;
+
 		f32 result = 0.0f;
-		for (u32 oh = (exH < mFh ? 0 : 1 + (exH - mFh) / mSh), endOh = min(1 + (exH / mSh), mOh); oh < endOh; oh++)
+		for (u32 oh = (exH < mFh ? 0 : 1 + (exH - mFh) / 1), endOh = min(1 + (exH / 1), mOh); oh < endOh; oh++)
 		{
-			for (u32 ow = (exW < mFw ? 0 : 1 + (exW - mFw) / mSw), endOw = min(1 + (exW / mSw), mOw); ow < endOw; ow++)
+			for (u32 ow = (exW < mFw ? 0 : 1 + (exW - mFw) / 1), endOw = min(1 + (exW / 1), mOw); ow < endOw; ow++)
 			{
 				const u32 row = oh * mOw + ow;
-				const u32 col = c * mFhFw + (exH - oh * mSh) * mFw + (exW - ow * mSw);
+				const u32 col = Ic * mFhFw + (exH - oh * 1) * mFw + (exW - ow * 1);
 				for (u32 Fc = 0; Fc < mFn; Fc++)
 				{
 					result += output_grad[N * mOcOhOw + Fc * mOhOw + row] * weight[Fc * mIcFhFw + col];
@@ -165,20 +167,24 @@ namespace
 			}
 		}
 
-		input_grad[id] = result;
+
+		input_grad[N * mIcIhIw + IcIhIw] = result;
 	}
 
 	__global__ void backward_gpu_impl_weight(
 		DataType* weight_grad,
 		const DataType* output_grad,
 		const DataType* reshapedInput,
-		const aoba::nn::layer::ConvolutionCore::parameterInfo* pInfo)
+		const aoba::nn::layer::TransposeConvCore::parameterInfo* pInfo)
 	{
-		const aoba::nn::layer::ConvolutionCore::parameterInfo& info = *pInfo;
+		const aoba::nn::layer::TransposeConvCore::parameterInfo& info = *pInfo;
 
-		u32 icfhfw = blockIdx.x * blockDim.x + threadIdx.x;
+		u32 IcFhFw = blockIdx.x * blockDim.x + threadIdx.x;
 		u32 Oc = blockIdx.y * blockDim.y + threadIdx.y;
-		if (Oc >= info.Oc || icfhfw >= info.IcFhFw)
+
+		const u32 mIcFhFw = info.IcFhFw;
+
+		if (Oc >= info.Oc || IcFhFw >= mIcFhFw)
 		{
 			return;
 		}
@@ -187,28 +193,27 @@ namespace
 		const u32 mOhOw = info.OhOw;
 		const u32 mOcOhOw = info.OcOhOw;
 		const u32 mOhOwIcFhFw = info.OhOwIcFhFw;
-		const u32 mIcFhFw = info.IcFhFw;
 
-		f32 result = 0.0f;
+		DataType result = 0.0f;
 		for (u32 N = 0; N < mBatchSize; N++)
 		{
 			for (u32 hw = 0; hw < mOhOw; hw++)
 			{
-				result += output_grad[N * mOcOhOw + Oc * mOhOw + hw] * reshapedInput[N * mOhOwIcFhFw + hw * mIcFhFw + icfhfw];
+				result += output_grad[N * mOcOhOw + Oc * mOhOw + hw] * reshapedInput[N * mOhOwIcFhFw + hw * mIcFhFw + IcFhFw];
 			}
 		}
-		weight_grad[Oc * mIcFhFw + icfhfw] = result;
+		weight_grad[Oc * mIcFhFw + IcFhFw] = result; 
 	}
 
 	__global__ void backward_gpu_impl_bias(
 		DataType* bias_grad,
 		const DataType* output_grad,
-		const aoba::nn::layer::ConvolutionCore::parameterInfo* pInfo)
+		const aoba::nn::layer::TransposeConvCore::parameterInfo* pInfo)
 	{
-		const aoba::nn::layer::ConvolutionCore::parameterInfo& info = *pInfo;
+		const aoba::nn::layer::TransposeConvCore::parameterInfo& info = *pInfo;
 
-		u32 id = blockIdx.x * blockDim.x + threadIdx.x;
-		if (id >= info.Oc)
+		u32 Oc = blockIdx.x * blockDim.x + threadIdx.x;
+		if (Oc >= info.Oc)
 		{
 			return;
 		}
@@ -217,16 +222,16 @@ namespace
 		const u32 mOcOhOw = info.OcOhOw;
 		const u32 mOhOw = info.OhOw;
 
-		f32 result = 0.0f;
+		DataType result = 0.0f;
 		for (u32 N = 0; N < mBatchSize; N++)
 		{
 			for (u32 hw = 0; hw < mOhOw; hw++)
 			{
-				result += output_grad[N * mOcOhOw + id * mOhOw + hw];
+				result += output_grad[N * mOcOhOw + Oc * mOhOw + hw];
 			}
 		}
 
-		bias_grad[id] = result;
+		bias_grad[Oc] = result; 
 	}
 }
 
@@ -238,27 +243,26 @@ namespace aoba
 	{
 		namespace layer
 		{
-			Layer Convolution(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight)
+			Layer TransposeConv(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight)
 			{
-				Layer conv = gen<ConvolutionCore>("Convolution", filterNum, filterSize, stride, padding, convWeight);
-				return conv;
+				Layer transposeConv = gen<TransposeConvCore>("TransposeConv", filterNum, filterSize, stride, padding, convWeight);
+				return transposeConv;
 			}
 
-			Layer Convolution(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight)
+			Layer TransposeConv(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight)
 			{
-				Layer conv = gen<ConvolutionCore>("Convolution", filterNum, filterHeight, filterWidth, strideHeight, strideWidth, paddingHeight, paddingWidth, convWeight);
-				return conv;
+				Layer transposeConv = gen<TransposeConvCore>("TransposeConv", filterNum, filterHeight, filterWidth, strideHeight, strideWidth, paddingHeight, paddingWidth, convWeight);
+				return transposeConv;
 			}
 
 
 
-			ConvolutionCore::ConvolutionCore(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 convWeight)
-				:ConvolutionCore(filterNum, filterSize, filterSize, stride, stride, padding, padding, convWeight)
+			TransposeConvCore::TransposeConvCore(u32 filterNum, u32 filterSize, u32 stride, u32 padding, f32 weight)
+				:TransposeConvCore(filterNum, filterSize, filterSize, stride, stride, padding, padding, weight)
 			{
-
 			}
 
-			ConvolutionCore::ConvolutionCore(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 convWeight)
+			TransposeConvCore::TransposeConvCore(u32 filterNum, u32 filterHeight, u32 filterWidth, u32 strideHeight, u32 strideWidth, u32 paddingHeight, u32 paddingWidth, f32 weight)
 				:BaseLayer(1, 1, 1, 2)
 				//入力非依存
 				, mFn(filterNum)
@@ -269,7 +273,7 @@ namespace aoba
 				, mSw(strideWidth)
 				, mPh(paddingHeight)
 				, mPw(paddingWidth)
-				, mConvolutionWeight(convWeight)
+				, mTransposeConvWeight(weight)
 				//入力依存
 				, mOutput(*m_output_tensorcore_tbl[0])
 				, mWeight(*mTrainableParameterTbl[0])
@@ -277,10 +281,9 @@ namespace aoba
 				//ヘルパー
 				, mReshapedInputData(false)
 			{
-				//CHECK(cudaMalloc(&mParameterInfoOnGPU, sizeof(parameterInfo)));
 			}
 
-			ConvolutionCore::~ConvolutionCore()
+			TransposeConvCore::~TransposeConvCore()
 			{
 				if (mIsParamerInfoAllocated)
 				{
@@ -289,7 +292,7 @@ namespace aoba
 			}
 
 
-			BaseLayer::iotype ConvolutionCore::forward(const BaseLayer::iotype& input_tensors)
+			BaseLayer::iotype TransposeConvCore::forward(const BaseLayer::iotype& input_tensors)
 			{
 				if (!m_init_finish)
 				{
@@ -298,8 +301,6 @@ namespace aoba
 
 
 				const auto& input = *getTensorCoreFrom(input_tensors[0]);
-
-				const bool input_on_cuda = input.isOnCuda();
 
 
 				//入力の形状チェック
@@ -315,13 +316,13 @@ namespace aoba
 					//入力を参考に、変数の再設定を行う。
 					resetVariable(input);
 
-					mOutput.reshapeAs(mBatchSize, mOc, mOh, mOw, input_on_cuda);
+					mOutput.reshapeAs(mBatchSize, mOc, mOh, mOw, m_on_cuda);
 
-					bool isInitReshapedInput = mReshapedInputData.reshapeExactlyAs(mBatchSize, mOhOw, mIcFhFw, input_on_cuda);
+					bool isInitReshapedInput = mReshapedInputData.reshapeExactlyAs(mBatchSize, mOhOw, mIcFhFw, m_on_cuda);
 
 					//パラメータのreshape
-					bool isWeightInit = mWeight.reshapeAs(mOc, mIcFhFw, input_on_cuda);
-					bool isBiasInit = mBias.reshapeAs(mOc, input_on_cuda);
+					bool isWeightInit = mWeight.reshapeAs(mOc, mIcFhFw, m_on_cuda);
+					bool isBiasInit = mBias.reshapeAs(mOc, m_on_cuda);
 
 
 					//[修正済み]
@@ -332,7 +333,7 @@ namespace aoba
 					if (isInitReshapedInput)
 					{
 #ifdef _DEBUG
-						std::cout << "Convolution Reshaped was initialized." << std::endl;
+						std::cout << "TransposeConv Reshaped was initialized." << std::endl;
 #endif // _DEBUG
 						for (u32 i = 0, end = mReshapedInputData.getDataSize(); i < end; i++)
 						{
@@ -344,14 +345,14 @@ namespace aoba
 					if (isWeightInit)
 					{
 #ifdef _DEBUG
-						std::cout << "Convolution Weight Param was initialized." << std::endl;
+						std::cout << "TransposeConv Weight Param was initialized." << std::endl;
 #endif // _DEBUG
 						std::random_device seed_gen;
 						std::default_random_engine engine(seed_gen());
 						std::normal_distribution<> dist(0.0f, std::sqrt(2.0f / mIcFhFw));
 						for (u32 i = 0, end = mWeight.getDataSize(); i < end; i++)
 						{
-							mWeight[i] = mConvolutionWeight* static_cast<DataType>(dist(engine));
+							mWeight[i] = mTransposeConvWeight* static_cast<DataType>(dist(engine));
 						}
 						mWeight.synchronize_from_CPU_to_GPU();
 					}
@@ -381,7 +382,7 @@ namespace aoba
 
 						//入力の形状変形
 						{
-							dim3 block(32, 32);//OK
+							dim3 block(32, 32);
 							dim3 grid(
 								(mIcIhIw + block.x - 1) / block.x,
 								(mBatchSize + block.y - 1) / block.y);
@@ -394,7 +395,7 @@ namespace aoba
 
 						//実際の順伝搬処理
 						{
-							dim3 block(32, 32);//OK
+							dim3 block(32, 32);
 							dim3 grid(
 								(mOcOhOw + block.x - 1) / block.x,
 								(mBatchSize + block.y - 1) / block.y);
@@ -417,7 +418,7 @@ namespace aoba
 				return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
 			}
 
-			void ConvolutionCore::backward()
+			void TransposeConvCore::backward()
 			{
 				if (const std::shared_ptr<TensorCore>& input_ptr = mInputTensorCoreTbl[0].lock())
 				{
@@ -440,7 +441,7 @@ namespace aoba
 						{
 							//weight
 							{
-								dim3 block(16, 16);
+								dim3 block(32, 32);
 								dim3 grid((mIcFhFw + block.x - 1) / block.x, (mOc + block.y - 1) / block.y);
 
 								backward_gpu_impl_weight << <grid, block >> > (
@@ -452,7 +453,7 @@ namespace aoba
 							}
 							//bias
 							{
-								dim3 block(16);
+								dim3 block(32);
 								dim3 grid((mOc + block.x - 1) / block.x);
 								backward_gpu_impl_bias << <grid, block >> > (
 									bias_gpu_grad_address,
@@ -472,13 +473,13 @@ namespace aoba
 						if (m_on_cuda)
 						{
 #ifdef _DEBUG
-							dim3 block(16, 16);
+							dim3 block(32, 16);
 #else
 							dim3 block(32, 32);
 #endif
 							dim3 grid((mIcIhIw + block.x - 1) / block.x, (mBatchSize + block.y - 1) / block.y);
 
-							backward_gpu_impl_input << <grid, block >> > (
+							backward_gpu_impl_input << <grid, block>> > (
 								input_gpu_grad_address,
 								output_gpu_grad_address,
 								weight_gpu_address,
@@ -495,7 +496,7 @@ namespace aoba
 
 
 
-			void ConvolutionCore::forward_cpu_impl(const TensorCore& input)
+			void TransposeConvCore::forward_cpu_impl(const TensorCore& input)
 			{
 				for (u32 N = 0; N < mBatchSize; N++)
 				{
@@ -505,17 +506,17 @@ namespace aoba
 						{
 							for (u32 Iw = 0; Iw < mIw; Iw++)
 							{
-								const u32 exH = Ih + mPh;
-								const u32 exW = Iw + mPw;
+								const u32 exH = mFh - 1 - mPh + Ih * mSh;
+								const u32 exW = mFw - 1 - mPw + Iw * mSw;
 
-								auto value = input(N, Ic, Ih, Iw);
+								const auto& value = input(N, Ic, Ih, Iw);
 
-								for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / mSh), endOh = std::min(1 + (exH / mSh), mOh); Oh < endOh; Oh++)
+								for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / 1), endOh = std::min(1 + (exH / 1), mOh); Oh < endOh; Oh++)
 								{
-									for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / mSw), endOw = std::min(1 + (exW / mSw), mOw); Ow < endOw; Ow++)
+									for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / 1), endOw = std::min(1 + (exW / 1), mOw); Ow < endOw; Ow++)
 									{
 										const u32 row = Oh * mOw + Ow;
-										const u32 col = Ic * mFhFw + (exH - Oh * mSh) * mFw + (exW - Ow * mSw);
+										const u32 col = Ic * mFhFw + (exH - Oh * 1) * mFw + (exW - Ow * 1);
 										mReshapedInputData(N, row, col) = value;
 									}
 								}
@@ -538,7 +539,7 @@ namespace aoba
 				}
 			}
 
-			void ConvolutionCore::backward_cpu_impl_input(TensorCore& input)
+			void TransposeConvCore::backward_cpu_impl_input(TensorCore& input)
 			{
 				for (u32 N = 0; N < mBatchSize; N++)
 				{
@@ -548,16 +549,16 @@ namespace aoba
 						const u32 h = (IcIhIw - c * mIhIw) / mIw;
 						const u32 w = IcIhIw % mIw;
 
-						const u32 exH = h + mPh;
-						const u32 exW = w + mPw;
+						const u32 exH = mFh - 1 - mPh + h * mSh;
+						const u32 exW = mFw - 1 - mPw + w * mSw;
 
 						f32 result = 0.0f;
-						for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / mSh), endOh = std::min(1 + (exH / mSh), mOh); Oh < endOh; Oh++)
+						for (u32 Oh = (exH < mFh ? 0 : 1 + (exH - mFh) / 1), endOh = std::min(1 + (exH / 1), mOh); Oh < endOh; Oh++)
 						{
-							for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / mSw), endOw = std::min(1 + (exW / mSw), mOw); Ow < endOw; Ow++)
+							for (u32 Ow = (exW < mFw ? 0 : 1 + (exW - mFw) / 1), endOw = std::min(1 + (exW / 1), mOw); Ow < endOw; Ow++)
 							{
 								const u32 row = Oh * mOw + Ow;
-								const u32 col = c * mFhFw + (exH - Oh * mSh) * mFw + (exW - Ow * mSw);
+								const u32 col = c * mFhFw + (exH - Oh * 1) * mFw + (exW - Ow * 1);
 								for (u32 Fc = 0; Fc < mOc; Fc++)
 								{
 									result += mOutput.d(N, Fc, row) * mWeight(Fc, col);
@@ -569,13 +570,13 @@ namespace aoba
 				}
 			}
 
-			void ConvolutionCore::backward_cpu_impl_parameter()
+			void TransposeConvCore::backward_cpu_impl_parameter()
 			{
-				for (u32 Oc = 0; Oc < mOc; Oc++)
+				for (u32 c = 0; c < mOc; c++)
 				{
 					//フィルター行列の逆伝搬
 					{
-						for (u32 IcFhFw = 0; IcFhFw < mIcFhFw; IcFhFw++)
+						for (u32 icfhfw = 0; icfhfw < mIcFhFw; icfhfw++)
 						{
 							f32 tmp = 0;
 
@@ -583,12 +584,10 @@ namespace aoba
 							{
 								for (u32 hw = 0; hw < mOhOw; hw++)
 								{
-									DataType output_grad = mOutput.d(N, Oc, hw);
-									DataType reshapedInput = mReshapedInputData(N, hw, IcFhFw);
-									tmp += output_grad * reshapedInput;
+									tmp += mOutput.d(N, c, hw) * mReshapedInputData(N, hw, icfhfw);
 								}
 							}
-							mWeight.d(Oc, IcFhFw) = tmp;
+							mWeight.d(c, icfhfw) = tmp;
 						}
 					}
 
@@ -599,10 +598,10 @@ namespace aoba
 						{
 							for (u32 hw = 0; hw < mOhOw; hw++)
 							{
-								tmp += mOutput.d(N, Oc, hw);
+								tmp += mOutput.d(N, c, hw);
 							}
 						}
-						mBias.d(Oc) = tmp;
+						mBias.d(c) = tmp;
 					}
 				}
 			}

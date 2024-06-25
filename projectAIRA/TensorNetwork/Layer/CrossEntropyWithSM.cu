@@ -59,7 +59,6 @@ namespace
 			sum += lossPerBatch[N];
 		}
 		output[0] = sum / batchSize;
-		//printf("%d | %f\n",N,  sum / batchSize);
 	}
 
 	__global__ void backward_gpu_impl(

@@ -224,7 +224,7 @@ namespace aoba
 							bool inputL_requires_grad = inputL.requiresGrad();
 							bool inputR_requires_grad = inputR.requiresGrad();
 
-							dim3 block(32, 32);
+							dim3 block(32, 32);//OK
 							dim3 grid((mBatchSize + block.x - 1) / block.x, (mCHW + block.y - 1) / block.y);
 
 							if (inputL_requires_grad && inputR_requires_grad)

@@ -62,8 +62,6 @@ namespace
 			}
 #endif
 			result += A[O * inputSize + I] * dIn[N * outputSize + O];
-			//printf("A[%d, %d] = %f\n", O, I, A[O * inputSize + I]);
-			//printf("DI[%d, %d] = %f\n", N, O, dIn[N * outputSize + O]);
 		}
 		dOut[N * inputSize + I] = result;
 	}
@@ -214,7 +212,7 @@ namespace aoba
 						std::normal_distribution<> dist(0.0f, std::sqrt(2.0f / m_input_size));
 						for (u32 i = 0, end = mWeight.getDataSize(); i < end; i++)
 						{
-							mWeight[i] = mAffineWeight * static_cast<DataType>(dist(engine));
+							mWeight[i] =  mAffineWeight* static_cast<DataType>(dist(engine));
 						}
 						mWeight.synchronize_from_CPU_to_GPU();
 					}
