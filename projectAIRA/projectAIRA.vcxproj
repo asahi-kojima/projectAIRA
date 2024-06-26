@@ -157,6 +157,7 @@
     <ClInclude Include="TensorNetwork\Layer\Sequential.h" />
     <ClInclude Include="TensorNetwork\Layer\Split.h" />
     <ClInclude Include="TensorNetwork\Layer\TransposeConv.h" />
+    <ClInclude Include="TensorNetwork\Optimizer\Adam.h" />
     <ClInclude Include="TensorNetwork\Optimizer\BaseOptimizer.h" />
     <ClInclude Include="TensorNetwork\Optimizer\SGD.h" />
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h" />
@@ -176,6 +177,7 @@
     <CudaCompile Include="TensorNetwork\Layer\ReLU.cu" />
     <CudaCompile Include="TensorNetwork\Layer\Split.cu" />
     <CudaCompile Include="TensorNetwork\Layer\TransposeConv.cu" />
+    <CudaCompile Include="TensorNetwork\Optimizer\Adam.cu" />
     <CudaCompile Include="TensorNetwork\Optimizer\SGD.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -512,6 +512,38 @@ public:
 
 };
 
+constexpr u32 nz = 100;
+constexpr u32 ngf = 32;
+
+class GNet : public nnModule
+{
+public:
+	GNet()
+	{
+		mlayer["seq"] = Sequential(
+			Convolution(nz, ngf * 8, 4, 1, 0),
+			BatchNorm(),
+			ReLU(),
+			Convolution(ngf * 8, ngf * 4, 4, 2, 1),
+			BatchNorm(),
+			ReLU(),
+			Convolution(ngf * 4, ngf * 2, 4, 2, 1),
+			BatchNorm(),
+			ReLU(),
+			Convolution(ngf * 2, ngf * 1, 4, 2, 1),
+			BatchNorm(),
+			ReLU(),
+			Convolution(ngf * 1, 1, 4,2,1),
+
+		);
+	}
+
+	iotype forward(const iotype& input) override
+	{
+
+	}
+};
+
 
 //Layer gen<MyLayer>();
 
