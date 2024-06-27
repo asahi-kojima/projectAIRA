@@ -62,6 +62,7 @@ public:
 
 	
 	bool reshapeAs(const TensorCore&, bool on_cuda = false);
+	bool reshapeExactlyAs(const TensorCore&, bool on_cuda = false);
 	bool reshapeAs(u32 width, bool on_cuda = false);
 	bool reshapeAs(u32 batchSize, u32 width, bool on_cuda = false);
 	bool reshapeAs(u32 batchSize, u32 height, u32 width, bool on_cuda = false);

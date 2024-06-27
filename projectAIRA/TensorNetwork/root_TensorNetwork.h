@@ -16,4 +16,8 @@
 #include "Layer/TransposeConv.h"
 #include "Layer/MaxPooling.h"
 #include "Layer/BatchNorm.h"
+#include "Layer/BasisFunction.h"
+
 #include "Optimizer/BaseOptimizer.h"
+#include "Optimizer/SGD.h"
+#include "Optimizer/Adam.h"

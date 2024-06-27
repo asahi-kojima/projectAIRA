@@ -137,6 +137,9 @@
     <ClInclude Include="TensorNetwork\Optimizer\Adam.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Optimizer</Filter>
     </ClInclude>
+    <ClInclude Include="TensorNetwork\Layer\BasisFunction.h">
+      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TensorNetwork\Layer\Add.cu">
@@ -174,6 +177,9 @@
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Optimizer\Adam.cu">
       <Filter>ソース ファイル\TensorNetwork\Optimizer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="TensorNetwork\Layer\BasisFunction.cu">
+      <Filter>ソース ファイル\TensorNetwork\Layer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

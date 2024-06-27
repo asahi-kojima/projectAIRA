@@ -430,6 +430,63 @@ void check_ReLU()
 	}
 }
 
+void check_Tanh()
+{
+	std::cout << "=======================" << std::endl;
+	std::cout << "Tanh Debug" << std::endl;
+	std::cout << "=======================" << std::endl;
+	auto tanh4GPU = Tanh();
+	auto tanh4CPU = Tanh();
+
+	Tensor testTensor4GPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4GPU, 1);
+	testTensor4GPU.to_cuda(true);
+	Tensor testTensor4CPU = Tensor(10, 3, 28, 28, true);
+	init(testTensor4CPU, 1);
+
+	auto outGPU = tanh4GPU(testTensor4GPU);
+	auto outCPU = tanh4CPU(testTensor4CPU);
+	outGPU[0].synchronize_from_GPU_to_CPU();
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		auto cpuValue = outCPU[0](i);
+		auto gpuValue = outGPU[0](i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+
+	}
+
+	for (u32 i = 0; i < outCPU[0].getDataSize(); i++)
+	{
+		outCPU[0].d(i) = 1;
+		outGPU[0].d(i) = 1;
+	}
+	outGPU[0].synchronize_from_CPU_to_GPU();
+
+	outCPU[0].backward();
+	outGPU[0].backward();
+
+	testTensor4GPU.synchronize_from_GPU_to_CPU();
+	for (u32 i = 0; i < testTensor4GPU.getDataSize(); i++)
+	{
+		auto cpuValue = testTensor4CPU.d(i);
+		auto gpuValue = testTensor4GPU.d(i);
+		auto error = abs(cpuValue - gpuValue) / abs(cpuValue);
+
+		if (error * 100 > 5)
+		{
+			std::cout << error << std::endl;
+			break;
+		}
+	}
+}
+
 void check_BatchNorm()
 {
 	std::cout << "=======================" << std::endl;
@@ -515,34 +572,34 @@ public:
 constexpr u32 nz = 100;
 constexpr u32 ngf = 32;
 
-class GNet : public nnModule
-{
-public:
-	GNet()
-	{
-		mlayer["seq"] = Sequential(
-			Convolution(nz, ngf * 8, 4, 1, 0),
-			BatchNorm(),
-			ReLU(),
-			Convolution(ngf * 8, ngf * 4, 4, 2, 1),
-			BatchNorm(),
-			ReLU(),
-			Convolution(ngf * 4, ngf * 2, 4, 2, 1),
-			BatchNorm(),
-			ReLU(),
-			Convolution(ngf * 2, ngf * 1, 4, 2, 1),
-			BatchNorm(),
-			ReLU(),
-			Convolution(ngf * 1, 1, 4,2,1),
-
-		);
-	}
-
-	iotype forward(const iotype& input) override
-	{
-
-	}
-};
+//class GNet : public nnModule
+//{
+//public:
+//	GNet()
+//	{
+//		mlayer["seq"] = Sequential(
+//			Convolution(nz, ngf * 8, 4, 1, 0),
+//			BatchNorm(),
+//			ReLU(),
+//			Convolution(ngf * 8, ngf * 4, 4, 2, 1),
+//			BatchNorm(),
+//			ReLU(),
+//			Convolution(ngf * 4, ngf * 2, 4, 2, 1),
+//			BatchNorm(),
+//			ReLU(),
+//			Convolution(ngf * 2, ngf * 1, 4, 2, 1),
+//			BatchNorm(),
+//			ReLU(),
+//			Convolution(ngf * 1, 1, 4,2,1),
+//
+//		);
+//	}
+//
+//	iotype forward(const iotype& input) override
+//	{
+//
+//	}
+//};
 
 
 //Layer gen<MyLayer>();
@@ -556,6 +613,7 @@ int main()
 	check_MaxPooling();
 	check_BatchNorm();
 	check_TransposeConv();
+	check_Tanh();
 	//return 1;
 
 	bool gpu_is_available = gpu_manager::gpu_is_available();
@@ -782,50 +840,50 @@ int main()
 	//	}
 	//}
 
-	////テスト9
-	//{
-	//	//auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
-	//	//auto seq = gen<MyLayer>();
+	//テスト9
+	{
+		//auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
+		//auto seq = gen<MyLayer>();
 
-	//	//auto seq = Sequential(Convolution(3,4,2, 1), BatchNorm(), ReLU(), Affine(10));
-	//	auto seq = Sequential(Convolution(3, 4, 2, 1), BatchNorm(), ReLU(), Convolution(3, 4, 2, 1), BatchNorm(), ReLU(), Affine(10));
-	//	//auto seq = Sequential(Affine(10));
-	//	//auto affine0 = Affine(100);
-	//	//auto relu = ReLU();
-	//	//auto affine1 = Affine(10);
+		//auto seq = Sequential(Convolution(3,4,2, 1), BatchNorm(), ReLU(), Affine(10));
+		auto seq = Sequential(Convolution(3, 4, 2, 1), BatchNorm(), ReLU(), Convolution(3, 4, 2, 1), BatchNorm(), ReLU(), Affine(10));
+		//auto seq = Sequential(Affine(10));
+		//auto affine0 = Affine(100);
+		//auto relu = ReLU();
+		//auto affine1 = Affine(10);
 
-	//	auto lossFunc = CrossEntropyWithSM();
-	//	auto optim = SGD(0.001f);
-	//	optim(seq);
-	//	std::cout << "===============================" << std::endl;
-	//	std::cout << "Test9" << std::endl;
-	//	std::cout << "===============================" << std::endl;
-	//	bool on_cuda = true;
-	//	for (u32 i = 0; i < 1000; i++)
-	//	{
-	//		std::cout << "-------------------------------" << std::endl;
-	//		std::cout << "Loop : " << i << std::endl;
-	//		std::cout << "-------------------------------" << std::endl;
+		auto lossFunc = CrossEntropyWithSM();
+		auto optim = Adam(0.001f);
+		optim(seq);
+		std::cout << "===============================" << std::endl;
+		std::cout << "Test9" << std::endl;
+		std::cout << "===============================" << std::endl;
+		bool on_cuda = true;
+		for (u32 i = 0; i < 1000; i++)
+		{
+			std::cout << "-------------------------------" << std::endl;
+			std::cout << "Loop : " << i << std::endl;
+			std::cout << "-------------------------------" << std::endl;
 
-	//		DataType average_prob = 0.0f;
-	//		for (u32 Bn = 0; Bn < batched_data_num; Bn++)
-	//		{
-	//			Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(on_cuda);
-	//			Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(on_cuda);
-	//			auto t = seq(training_tensor);
-	//			auto loss = lossFunc(t[0], correct_tensor);
-	//			loss[0].synchronize_from_GPU_to_CPU();
-	//			auto prob = BaseOptimizer::convert_loss_to_prob(loss[0](0));
-	//			average_prob = (average_prob * Bn + prob) / (Bn + 1);
-	//			//std::cout << prob * 100 << std::endl;
-	//			loss[0].backward();
-	//			optim.optimize();
+			DataType average_prob = 0.0f;
+			for (u32 Bn = 0; Bn < batched_data_num; Bn++)
+			{
+				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(on_cuda);
+				Tensor& correct_tensor = correct_tensor_tbl[Bn]; correct_tensor.to_cuda(on_cuda);
+				auto t = seq(training_tensor);
+				auto loss = lossFunc(t[0], correct_tensor);
+				loss[0].synchronize_from_GPU_to_CPU();
+				auto prob = BaseOptimizer::convert_loss_to_prob(loss[0](0));
+				average_prob = (average_prob * Bn + prob) / (Bn + 1);
+				//std::cout << prob * 100 << std::endl;
+				loss[0].backward();
+				optim.optimize();
 
-	//			progressBar(Bn, batched_data_num, average_prob * 100);
-	//		}
-	//		std::cout << std::endl;
-	//	}
-	//}
+				progressBar(Bn, batched_data_num, average_prob * 100);
+			}
+			std::cout << std::endl;
+		}
+	}
 
 
 	//テスト10
@@ -833,15 +891,16 @@ int main()
 		//auto seq = Sequential(Affine(300), ReLU(), Affine(300), ReLU(), Affine(300), ReLU(), Affine(100), ReLU(), Affine(10));
 		//auto seq = gen<MyLayer>();
 
-		auto seq = Sequential(Convolution(1, 3, 1, 1, 0.0001f), ReLU());// , MaxPooling(3, 1, 1));
+		auto seq = Sequential(Convolution(1, 3, 1, 1, 0.0001f), ReLU(), Tanh());// , MaxPooling(3, 1, 1));
 		auto split = Split();
+		auto tanh_1 = Tanh();
 		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
 		//auto affine1 = Affine(10);
 
 		auto lossFunc = L2Loss();
-		auto optim = SGD(0.0000001f);
+		auto optim = SGD(0.00001f);
 		optim(seq);
 		std::cout << "===============================" << std::endl;
 		std::cout << "Test10" << std::endl;
@@ -860,7 +919,7 @@ int main()
 				Tensor& training_tensor = input_tensor_tbl[Bn];  training_tensor.to_cuda(on_cuda);
 				auto splited_training_data = split(training_tensor);
 				auto t = seq(splited_training_data[0]);
-				auto loss = lossFunc(t[0], splited_training_data[1]);
+				auto loss = lossFunc(t[0], tanh_1(splited_training_data[1])[0]);
 				loss[0].synchronize_from_GPU_to_CPU();
 				loss[0].backward();
 				optim.optimize();

@@ -145,6 +145,7 @@
     <ClInclude Include="common\typeinfo.h" />
     <ClInclude Include="TensorNetwork\Layer\Add.h" />
     <ClInclude Include="TensorNetwork\Layer\Affine.h" />
+    <ClInclude Include="TensorNetwork\Layer\BasisFunction.h" />
     <ClInclude Include="TensorNetwork\Layer\BatchNorm.h" />
     <ClInclude Include="TensorNetwork\Layer\Convolution.h" />
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
@@ -169,6 +170,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="TensorNetwork\Layer\Affine.cu" />
+    <CudaCompile Include="TensorNetwork\Layer\BasisFunction.cu" />
     <CudaCompile Include="TensorNetwork\Layer\BatchNorm.cu" />
     <CudaCompile Include="TensorNetwork\Layer\Convolution.cu" />
     <CudaCompile Include="TensorNetwork\Layer\CrossEntropyWithSM.cu" />

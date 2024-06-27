@@ -9,5 +9,5 @@ public:
 	~SGD();
 
 	virtual void initialize() override;
-	virtual void optimize_unique() override;
+	virtual void optimize_unique(tensor::TensorCore&) override;
 };

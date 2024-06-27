@@ -254,6 +254,41 @@ bool TensorCore::reshapeAs(const TensorCore& input, bool on_cuda)
 	return isInitialized;
 }
 
+bool TensorCore::reshapeExactlyAs(const TensorCore& input, bool on_cuda)
+{
+	bool isInitialized = false;
+	if (mDimension == Dimension::dim0)
+	{
+		*this = TensorCore(input, m_grad_required);
+		isInitialized = true;
+	}
+	else
+	{
+		const u32 required_datasize = input.mDataSize;
+		if (mDataSize == required_datasize)
+		{
+			if (!isSameShape(input))
+			{
+				setNewShape(input);
+				isInitialized = true;
+			}
+		}
+		else
+		{
+			*this = TensorCore(input, m_grad_required);
+			isInitialized = true;
+		}
+	}
+
+	if (on_cuda)
+	{
+		to_cuda();
+	}
+
+	return isInitialized;
+}
+
+
 bool TensorCore::reshapeAs(u32 width, bool on_cuda)
 {
 	bool isInitialized = false;

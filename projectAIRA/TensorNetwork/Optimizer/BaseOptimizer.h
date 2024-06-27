@@ -13,31 +13,45 @@ namespace aoba
 			class SGD;
 			class Adam;
 		}
+
+		namespace tensor
+		{
+			class TensorCore;
+		}
 	}
 }
 
 
-
-class aoba::nn::optimizer::BaseOptimizer
+namespace aoba
 {
-public:
-	BaseOptimizer(DataType learningRate);
-	virtual ~BaseOptimizer();
+	namespace nn
+	{
+		namespace optimizer
+		{
+			class BaseOptimizer
+			{
+			public:
+				BaseOptimizer(DataType learningRate);
+				virtual ~BaseOptimizer();
 
-	virtual void optimize() final;
-	virtual void initialize() = 0;
-	virtual void optimize_unique() = 0;
-	virtual void operator()(const layer::Layer&) final;
+				virtual void optimize() final;
+				virtual void initialize() = 0;
+				virtual void optimize_unique(tensor::TensorCore&) = 0;
+				virtual void operator()(const layer::Layer&) final;
 
-	inline static DataType convert_loss_to_prob(DataType loss) { return exp(-loss); }
-protected:
+				inline static DataType convert_loss_to_prob(DataType loss) { return exp(-loss); }
+			protected:
 
-	DataType mLearningRate;
-	std::vector<std::weak_ptr<layer::BaseLayer> > m_OptimizeScheduled_BaseLayer_tbl;
+				DataType mLearningRate;
+				//std::vector<std::weak_ptr<layer::BaseLayer> > m_OptimizeScheduled_BaseLayer_tbl;
+				std::vector<std::weak_ptr<tensor::TensorCore> > mOptimizeScheduledParamTbl;
 
+			private:
+				bool mIsInitialized;
+			};
 
-private:
-	bool mIsInitialized;
-};
+		}
+	}
+}
 
 

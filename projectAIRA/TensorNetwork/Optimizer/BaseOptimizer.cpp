@@ -6,7 +6,8 @@ namespace aoba::nn::optimizer
 
 	BaseOptimizer::BaseOptimizer(DataType learningRate)
 		:mLearningRate(learningRate)
-		, m_OptimizeScheduled_BaseLayer_tbl(0)
+		//, m_OptimizeScheduled_BaseLayer_tbl(0)
+		, mOptimizeScheduledParamTbl(0)
 		, mIsInitialized(false)
 	{
 	}
@@ -19,11 +20,13 @@ namespace aoba::nn::optimizer
 	{
 		const auto& baseLayer = *layer.getBaseLayer();
 
-		m_OptimizeScheduled_BaseLayer_tbl.push_back(layer.getBaseLayer());
+		for (auto iter = baseLayer.getTrainableParamTbl().begin(), end = baseLayer.getTrainableParamTbl().end(); iter != end; iter++)
+		{
+			mOptimizeScheduledParamTbl.push_back(*iter);
+		}
+
 		for (auto iter = baseLayer.getInternalLayerTbl().begin(), end = baseLayer.getInternalLayerTbl().end(); iter != end; iter++)
 		{
-			//layer::Layer layer{iter->second.getLayerCore(), ""};
-			//(*this)(layer);
 			(*this)(iter->second);
 		}
 	}
@@ -36,7 +39,18 @@ namespace aoba::nn::optimizer
 			mIsInitialized = true;
 		}
 
-		optimize_unique();
+		for (auto iter = mOptimizeScheduledParamTbl.begin(), end = mOptimizeScheduledParamTbl.end(); iter != end; iter++)
+		{
+			if (const std::shared_ptr<tensor::TensorCore>& parameter = (*iter).lock())
+			{
+				optimize_unique(*parameter);
+			}
+			else
+			{
+				std::cout << "Resource Error@BaseOptimizer::optimize" << std::endl;
+				exit(1);
+			}
+		}
 	}
 
 }

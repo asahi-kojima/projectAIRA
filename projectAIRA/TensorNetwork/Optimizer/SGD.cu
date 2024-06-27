@@ -40,45 +40,28 @@ namespace aoba
 #endif
 			}
 
-			void SGD::optimize_unique()
-			{
-				for (auto iter = m_OptimizeScheduled_BaseLayer_tbl.begin(), end = m_OptimizeScheduled_BaseLayer_tbl.end(); iter != end; iter++)
+			void SGD::optimize_unique(tensor::TensorCore& parameter)
+			{			
+				const u32 paramSize = parameter.getDataSize();
+				if (parameter.isOnCuda())
 				{
-					if (const std::shared_ptr<layer::BaseLayer>& pLayercore = (*iter).lock())
+					dim3 block(32);
+					dim3 grid((paramSize + block.x - 1) / block.x);
+					optimize_on_gpu << <grid, block >> > (
+						parameter.getGpuDataAddress(),
+						parameter.getGpuGradDataAddress(),
+						mLearningRate,
+						paramSize);
+					CUDA_SYNCHRONIZE_DEBUG;
+				}
+				else
+				{
+					for (u32 i = 0; i < paramSize; i++)
 					{
-						const auto& baseLayer = *pLayercore;
-						bool on_cuda = baseLayer.isOnCuda();
-						for (auto iter = baseLayer.getTrainableParamTbl().begin(), end = baseLayer.getTrainableParamTbl().end(); iter != end; iter++)
-						{
-							auto& parameter_tensor = *(*iter);
-							if (!parameter_tensor.requiresGrad())
-							{
-								continue;
-							}
-
-							const u32 dataSize = parameter_tensor.getDataSize();
-
-							if (on_cuda)
-							{
-								dim3 block(32);
-								dim3 grid((dataSize + block.x - 1) / block.x);
-								optimize_on_gpu << <grid, block >> > (
-									parameter_tensor.getGpuDataAddress(),
-									parameter_tensor.getGpuGradDataAddress(),
-									mLearningRate,
-									dataSize);
-								CUDA_SYNCHRONIZE_DEBUG;
-							}
-							else
-							{
-								for (u32 i = 0; i < dataSize; i++)
-								{
-									parameter_tensor(i) -= mLearningRate * parameter_tensor.d(i);
-								}
-							}
-						}
+						parameter(i) -= mLearningRate * parameter.d(i);
 					}
 				}
+				
 			}
 
 
