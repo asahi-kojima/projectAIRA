@@ -3,6 +3,7 @@
 
 namespace
 {
+	//TanhŠÖŒW
 	__host__ __device__ DataType hd_tanh_forward(DataType x)
 	{
 		return tanh(x);
@@ -35,6 +36,41 @@ namespace
 		const DataType input_value = input[index];
 		input_grad[index] = hd_tanh_backward(output_grad_value, input_value);
 	}
+
+
+	//SigmoidŠÖŒW
+	__host__ __device__ DataType hd_sigmoid_forward(DataType x)
+	{
+		return 1 / (1 + exp(-x));
+	}
+	__global__ void g_sigmoid_forward(DataType* output, const DataType* input, u32 dataSize)
+	{
+		const u32 index = blockIdx.x * blockDim.x + threadIdx.x;
+		if (index >= dataSize)
+		{
+			return;
+		}
+
+		output[index] = hd_sigmoid_forward(input[index]);
+	}
+
+	__host__ __device__ DataType hd_sigmoid_backward(DataType output_grad, DataType input)
+	{
+		const DataType exp_ninus_x = exp(-input);
+		return output_grad * (exp_ninus_x / ((1+ exp_ninus_x) * (1+ exp_ninus_x)));
+	}
+	__global__ void g_sigmoid_backward(DataType* input_grad, const DataType* output_grad, const DataType* input, u32 dataSize)
+	{
+		const u32 index = blockIdx.x * blockDim.x + threadIdx.x;
+		if (index >= dataSize)
+		{
+			return;
+		}
+
+		const DataType output_grad_value = output_grad[index];
+		const DataType input_value = input[index];
+		input_grad[index] = hd_sigmoid_backward(output_grad_value, input_value);
+	}
 }
 
 namespace aoba
@@ -48,6 +84,13 @@ namespace aoba
 				Layer tanh = gen<BasisFunctionCore>("Tanh", hd_tanh_forward, g_tanh_forward, hd_tanh_backward, g_tanh_backward);
 				return tanh;
 			}
+
+			Layer Sigmoid()
+			{
+				Layer sigmoid = gen<BasisFunctionCore>("Sigmoid", hd_sigmoid_forward, g_sigmoid_forward, hd_sigmoid_backward, g_sigmoid_backward);
+				return sigmoid;
+			}
+
 
 
 			BasisFunctionCore::BasisFunctionCore(

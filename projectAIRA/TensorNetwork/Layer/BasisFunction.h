@@ -10,6 +10,7 @@ namespace aoba
 		namespace layer
 		{
 			Layer Tanh();
+			Layer Sigmoid();
 
 
 
