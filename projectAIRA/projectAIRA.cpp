@@ -614,7 +614,7 @@ public:
 			Convolution(ndf * 4, 4, 2, 1),//7->3
 			BatchNorm(),
 			ReLU(),
-			Convolution(ndf*8, 5, 1, 1)//1->1
+			Convolution(ndf * 8, 5, 1, 1)//1->1
 		);
 	}
 
@@ -630,13 +630,13 @@ public:
 
 int main()
 {
-	check_Affine();
-	check_ReLU();
-	check_Conv();
-	check_MaxPooling();
-	check_BatchNorm();
-	check_TransposeConv();
-	check_Tanh();
+	//check_Affine();
+	//check_ReLU();
+	//check_Conv();
+	//check_MaxPooling();
+	//check_BatchNorm();
+	//check_TransposeConv();
+	//check_Tanh();
 	//return 1;
 
 	bool gpu_is_available = gpu_manager::gpu_is_available();
@@ -686,7 +686,7 @@ int main()
 	}
 
 	int sss = 1 + 1;
-	//////テスト１
+	////テスト１
 	//{
 	//	std::cout << "===============================" << std::endl;
 	//	std::cout << "Test1" << std::endl;
@@ -960,7 +960,7 @@ int main()
 		auto d = gen<DNet>();
 		auto g = gen<GNet>();
 		auto split = Split();
-		
+
 
 		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
@@ -1001,71 +1001,4 @@ int main()
 	}
 	std::cout << "free check" << std::endl;
 }
-
-
-//例えばこんなことをやりたい。
-//class Affine : public LayerCore
-//{
-//public:
-//	Affine() : LayerCore(param = 2)
-//	{
-//		mWeight = mParameterTbl[0];
-//		mBias = mParameterTbl[1];
-//
-//		mInnerLayerCoreTbl.
-//	}
-//
-//	Otype forward(auto input)
-//	{
-//
-//	}
-//
-//
-//private:
-//	std::shared_ptr<TensorCore> mWeight;
-//	std::shared_ptr<TensorCore> mBias;
-//};
-//
-//class DNet : public LayerCore
-//{
-//public:
-//	DNet() : LayerCore(param = 2)
-//	{
-//		mMainLayer = Sequential(Affine(), ReLU(), Affine(), ReLU());
-//	}
-//
-//	iotype forward(const iotype& input) override
-//	{
-//		auto output = mMainLayer(input);
-//		return output;
-//	}
-//
-//private:
-//	std::shared_ptr<LayerCore> mMainLayer;
-//};
-//
-//class G : public LayerCore {};
-//
-//int exMain()
-//{
-//	auto d = DNet();
-//	auto g = GNet();
-//	auto lossNet = L1Loss();
-//	auto optimizer = Adam();
-//	for (u32 i = 0; i < 1000; i++)
-//	{
-//		auto z = Tensor{};
-//		auto fake_img = g(z);
-//		auto out = d(fake_img);
-//		auto loss = lossNet(out, torch.ones());
-//
-//		d.zero_grad();
-//		g.zero_grad();
-//
-//		loss.backward();
-//		optimizer(d, g);
-//
-//
-//	}
-//}
 

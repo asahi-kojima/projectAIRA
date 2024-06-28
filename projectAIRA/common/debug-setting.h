@@ -1,4 +1,6 @@
 #pragma once
+#include "typeinfo.h"
+
 #define ON 1
 #define OFF 0
 
@@ -11,18 +13,41 @@
 #define GPU_SYNC_DEBUG (ON & _DEBUG)
 #define CPU_DEBUG_ON (OFF & DEBUG_MODE)
 #define INDEX_DEBUG (ON & DEBUG_MODE)
+
+
 ////Timeデバッグは以下のIndexデバッグと併用すると
 ////正確な値が出ないので注意。
 ////GPU使用時にGPUSyncが切れているとTimeデバッグは
 ////正確な値が出ないので注意。
-//#define TIME_DEBUG (ON & _DEBUG)
-//
-//#if TIME_DEBUG
-//#include <map>
-//#include <string>
-//#include <chrono>
-//extern std::map<std::string, f32> timers;
-//#endif
+#define TIME_DEBUG (ON & _DEBUG)
+
+#if TIME_DEBUG
+#include <map>
+#include <string>
+#include <chrono>
+namespace aoba
+{
+	namespace nn
+	{
+		namespace layer
+		{
+			extern std::map<std::string, f32> debugTimers;
+		}
+	}
+}
+
+inline std::string makeDebugIdentifier(const u32 id, const char* functionName, const char* detailFunctionName)
+{
+    const u32 IdLength = 4;
+    std::string id_as_string = std::to_string(id);
+    const u32 complementSize =( (0 >= (IdLength - id_as_string.length())) ? 0 : IdLength - id_as_string.length() );
+    std::string name(complementSize, '0');
+    name += id_as_string += " : ";
+    name += (std::string(functionName) += detailFunctionName);
+
+    return name;
+}
+#endif
 
 
 #ifdef _DEBUG

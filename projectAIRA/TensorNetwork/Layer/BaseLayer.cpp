@@ -2,8 +2,13 @@
 #include "Tensor/Tensor.h"
 #include "Layer.h"
 
+
+
 namespace aoba::nn::layer
 {
+	std::map<std::string, f32> debugTimers;
+
+	u32 BaseLayer::InstanceID = 0;
 
 	BaseLayer::BaseLayer(u32 input_tensor_num, u32 output_tensor_num)
 		: BaseLayer(input_tensor_num, output_tensor_num, 0, 0)
@@ -11,7 +16,7 @@ namespace aoba::nn::layer
 	}
 
 	BaseLayer::BaseLayer(u32 input_tensor_num, u32 output_tensor_num, u32 output_tensorcore_num)
-		: BaseLayer(input_tensor_num, output_tensor_num, output_tensorcore_num , 0)
+		: BaseLayer(input_tensor_num, output_tensor_num, output_tensorcore_num, 0)
 	{
 	}
 
@@ -25,22 +30,22 @@ namespace aoba::nn::layer
 		, mlayer(m_internal_layer_tbl)
 
 		, m_downstream_backward_checkTbl(output_tensor_num)
+
+		, mInstanceID(InstanceID)
 	{
 		for (u32 i = 0; i < trainable_parameter_num; i++)
 		{
 			mTrainableParameterTbl.push_back(std::make_shared<TensorCore>(true));
 		}
-		
+
 		for (u32 i = 0; i < output_tensorcore_num; i++)
 		{
 			m_output_tensorcore_tbl.push_back(std::make_shared<TensorCore>(true));
 		}
+
+		InstanceID++;
 	}
 
-	const std::shared_ptr<tensor::TensorCore>& BaseLayer::getTensorCoreFrom(const Tensor& tensor)
-	{
-		return tensor.pTensorCore;
-	}
 
 	BaseLayer::iotype BaseLayer::callForward(const iotype& input_tensors)
 	{
@@ -55,7 +60,7 @@ namespace aoba::nn::layer
 			if (input_tensors.size() != m_input_tensor_num)
 			{
 				std::cout << "The number of input tensor must be " << m_input_tensor_num << "." << std::endl;
-				std::cout<< "But current input number is " << input_tensors.size() << "." << std::endl;
+				std::cout << "But current input number is " << input_tensors.size() << "." << std::endl;
 				exit(1);
 			}
 
@@ -156,6 +161,27 @@ namespace aoba::nn::layer
 		}
 	}
 
+
+	bool BaseLayer::isOnCuda() const
+	{
+		return m_on_cuda;
+	}
+
+	const std::vector<std::shared_ptr<aoba::nn::tensor::TensorCore> >& BaseLayer::getTrainableParamTbl() const
+	{
+		return mTrainableParameterTbl;
+	}
+
+	const std::map<std::string, Layer >& BaseLayer::getInternalLayerTbl() const
+	{
+		return m_internal_layer_tbl;
+	}
+
+	const std::shared_ptr<tensor::TensorCore>& BaseLayer::getTensorCoreFrom(const Tensor& tensor)
+	{
+		return tensor.pTensorCore;
+	}
+
 	void BaseLayer::initialize()
 	{
 		if (m_init_finish)
@@ -183,6 +209,29 @@ namespace aoba::nn::layer
 		m_output_tensorcore_tbl[childNo]->regist_upstream_layer(shared_from_this());
 	}
 
+
+	void BaseLayer::save(const std::string& savePath) const
+	{
+		for (const auto& param : mTrainableParameterTbl)
+		{
+
+		}
+
+		//“à•”‘w‚É•Û‘¶–½—ß‚ðÄ‹A“I‚Éo‚·
+		for (auto iter = m_internal_layer_tbl.begin(), end = m_internal_layer_tbl.end(); iter != end; iter++)
+		{
+			const std::string& mLayerName = iter->first;
+			Layer layer = iter->second;
+
+			//layer.save();
+		}
+	}
+
+	void BaseLayer::load(const std::string& loadPath)
+	{
+
+	}
+
 	Layer::Layer(const Layer& layer)
 		:mBaseLayer(layer.mBaseLayer)
 		, mLayerName(layer.mLayerName)
@@ -198,4 +247,13 @@ namespace aoba::nn::layer
 		return mBaseLayer->callForward(input);
 	}
 
+	void Layer::save(const std::string& savePath) const
+	{
+		mBaseLayer->save(savePath);
+	}
+
+	void Layer::load(const std::string& loadPath)
+	{
+		mBaseLayer->load(loadPath);
+	}
 }

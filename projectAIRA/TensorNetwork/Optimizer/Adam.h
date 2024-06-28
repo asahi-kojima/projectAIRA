@@ -17,11 +17,8 @@ namespace aoba
 				virtual void optimize_unique(tensor::TensorCore&) override;
 
 			private:
-				//std::vector<tensor::TensorCore> mMomentumTbl;
-				//std::vector<tensor::TensorCore> mVelocityTbl;
 				std::map<tensor::TensorCore*, tensor::TensorCore> mMomentumMap;
 				std::map<tensor::TensorCore*, tensor::TensorCore> mVelocityMap;
-				//std::map<tensor::TensorCore*, u32> mOrderMap;
 				DataType mBeta0;
 				DataType mBeta1;
 				std::map<tensor::TensorCore* ,u32> mIterationTbl;

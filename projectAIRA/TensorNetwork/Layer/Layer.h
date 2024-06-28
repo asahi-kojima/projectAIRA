@@ -78,6 +78,9 @@ namespace aoba
 					return mBaseLayer;
 				}
 
+				void save(const std::string& savePath) const;
+				void load(const std::string& loadPath);
+
 			private:
 				std::shared_ptr<BaseLayer> mBaseLayer;
 				std::string mLayerName;

@@ -48,36 +48,6 @@ namespace aoba
 }
 
 
-//class aoba::nn::tensor::IOTensor
-//{
-//public:
-//	template<typename ... Args>
-//	IOTensor(Args ... args)
-//		:mTensorTbl(0)
-//	{
-//		tensor::Tensor inputTbl[] = {args...};
-//		mInputNum = sizeof(inputTbl) / sizeof(inputTbl[0]);
-//
-//		for (u32 i = 0; i < mInputNum; i++)
-//		{
-//			mTensorTbl.push_back(inputTbl[i]);
-//		}
-//	}
-//
-//	u32 mInputNum;
-//	std::vector<tensor::Tensor> mTensorTbl;
-//
-//	//Tensor operator[](u32 index)
-//	//{
-//	//	if (index >= mInputNum)
-//	//	{
-//	//		assert(0);
-//	//	}
-//
-//	//	return mTensorTbl[index];
-//	//}
-//};
-
 
 //コンストラクタで子テンソルにshared_ptr化したthisを登録したくて継承。
 //問題が起きたらここを疑う。
@@ -95,26 +65,20 @@ public:
 
 	iotype callForward(const iotype&);
 	void callBackward(u32 downstream_index);
-	//void regist_this_to_output_tensor();
 
 	u32 get_input_tensor_num() const { return m_input_tensor_num; }
 	u32 get_output_tensor_num() const { return m_output_tensor_num; }
 
 
-	bool isOnCuda() const
-	{
-		return m_on_cuda;
-	}
+	bool isOnCuda() const;
 
-	const std::vector<std::shared_ptr<aoba::nn::tensor::TensorCore> >& getTrainableParamTbl() const
-	{
-		return mTrainableParameterTbl;
-	}
+	const std::vector<std::shared_ptr<aoba::nn::tensor::TensorCore> >& getTrainableParamTbl() const;
 
-	const std::map<std::string, Layer >& getInternalLayerTbl() const
-	{
-		return m_internal_layer_tbl;
-	}
+	const std::map<std::string, Layer >& getInternalLayerTbl() const;
+
+
+	void save(const std::string& savePath) const;
+	void load(const std::string& loatPath);
 
 protected:
 	using TensorCore = aoba::nn::tensor::TensorCore;
@@ -148,7 +112,6 @@ protected:
 	const u32 m_output_tensor_num;
 	const u32 m_trainable_parameter_num;
 
-	//void init_childtensor_with(std::shared_ptr<LayerSkeleton>&& )
 
 
 
@@ -157,8 +120,8 @@ protected:
 	void initialize();
 	void genDownStreamTensor(u32 childNo);
 
-
-	//TensorCoreにアクセスするための関数群
+	static u32 InstanceID;
+	const u32 mInstanceID;
 
 private:
 
@@ -169,18 +132,12 @@ private:
 		mInputTensorCoreTbl[location].reset();
 	}
 
-	/// <summary>
-	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
-	/// </summary>
-	/// <param name="input_tensors"></param>
-	/// <returns></returns>
+
+	// 各層が独自に行うforward処理はこの仮想関数に実装する。
 	virtual iotype forward(const iotype& input_tensors) = 0;
 
-	/// <summary>
-	/// 各層が独自に行うforward処理はこの仮想関数に実装する。
-	/// </summary>
-	/// <param name="input_tensors"></param>
-	/// <returns></returns>
+
+	// 各層が独自に行うforward処理はこの仮想関数に実装する。
 	virtual void backward()
 	{
 		having_unique_implimention = false;
@@ -203,21 +160,3 @@ namespace aoba
 		}
 	}
 }
-
-//template <typename T, typename ... Args>
-//aoba::nn::layer::nnLayer aoba::nn::layer::gen(Args ... args)
-//{
-//	LayerCore::Layer layer{};
-//	layer.mLayerCore = std::make_shared<T>(args...);
-//	return layer;
-//}
-//
-//template <typename T, typename ... Args>
-//aoba::nn::layer::nnLayer aoba::nn::layer::gen(const char* layerName, Args ... args)
-//{
-//	LayerCore::Layer layer{};
-//	layer.mLayerCore = std::make_shared<T>(args...);
-//	layer.mLayerName = layerName;
-//	return layer;
-//}
-

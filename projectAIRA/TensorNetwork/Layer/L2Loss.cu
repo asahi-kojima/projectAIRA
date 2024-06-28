@@ -176,6 +176,9 @@ namespace aoba
 					{
 						dim3 block(32);
 						dim3 grid((mBatchSize + block.x - 1) / block.x);
+#ifdef TIME_DEBUG
+						std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+#endif // TIME_DEBUG
 						forward_gpu_impl_pre << <grid, block >> > (
 							lossPerBatch_gpu_address,
 							inputL_gpu_address,
@@ -183,21 +186,42 @@ namespace aoba
 							mBatchSize,
 							mCHW);
 						CUDA_SYNCHRONIZE_DEBUG;
+#ifdef TIME_DEBUG
+						f32 elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count() / 1000.0f;
+						std::string name = makeDebugIdentifier(mInstanceID, __FUNCTION__, "forward_gpu_impl_pre");
+						debugTimers[name] = elapsedTime;
+#endif // TIME_DEBUG
 					}
 					{
 						dim3 block(1);
 						dim3 grid(1);
+#ifdef TIME_DEBUG
+						std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+#endif // TIME_DEBUG
 						forward_gpu_impl_sum << <grid, block >> > (
 							output_gpu_address,
 							lossPerBatch_gpu_address,
 							mBatchSize);
 						CUDA_SYNCHRONIZE_DEBUG;
+#ifdef TIME_DEBUG
+						f32 elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count() / 1000.0f;
+						std::string name = makeDebugIdentifier(mInstanceID, __FUNCTION__, "forward_gpu_impl_sum");
+						debugTimers[name] = elapsedTime;
+#endif // TIME_DEBUG
 					}
 
 				}
 				else
 				{
+#ifdef TIME_DEBUG
+					std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+#endif // TIME_DEBUG
 					forward_cpu_impl(inputL, inputR);
+#ifdef TIME_DEBUG
+					f32 elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count() / 1000.0f;
+					std::string name = makeDebugIdentifier(mInstanceID, __FUNCTION__, "forward_cpu_impl");
+					debugTimers[name] = elapsedTime;
+#endif // TIME_DEBUG
 				}
 
 				return iotype{ Tensor(m_output_tensorcore_tbl[0]) };
@@ -226,7 +250,9 @@ namespace aoba
 
 							dim3 block(32, 32);//OK
 							dim3 grid((mBatchSize + block.x - 1) / block.x, (mCHW + block.y - 1) / block.y);
-
+#ifdef TIME_DEBUG
+							std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+#endif // TIME_DEBUG
 							if (inputL_requires_grad && inputR_requires_grad)
 							{
 								backward_gpu_impl_both << <grid, block >> > (
@@ -256,10 +282,23 @@ namespace aoba
 									mCHW);
 							}
 							CUDA_SYNCHRONIZE_DEBUG;
+#ifdef TIME_DEBUG
+							f32 elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count() / 1000.0f;
+							std::string name = makeDebugIdentifier(mInstanceID, __FUNCTION__, "backward_gpu_impl");
+							debugTimers[name] = elapsedTime;
+#endif // TIME_DEBUG
 						}
 						else
 						{
+#ifdef TIME_DEBUG
+							std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+#endif // TIME_DEBUG
 							backward_cpu_impl(inputL, inputR);
+#ifdef TIME_DEBUG
+							f32 elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start).count() / 1000.0f;
+							std::string name = makeDebugIdentifier(mInstanceID, __FUNCTION__, "backward_cpu_impl");
+							debugTimers[name] = elapsedTime;
+#endif // TIME_DEBUG
 						}
 
 					}
