@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <filesystem>
 #include "debug-setting.h"
 #include "typeinfo.h"
 #include "Tensor/Tensor.h"
@@ -77,8 +78,8 @@ public:
 	const std::map<std::string, Layer >& getInternalLayerTbl() const;
 
 
-	void save(const std::string& savePath) const;
-	void load(const std::string& loatPath);
+	void save(const std::filesystem::path& saveDirPath) const;
+	void load(const std::filesystem::path& loatDirPath);
 
 protected:
 	using TensorCore = aoba::nn::tensor::TensorCore;

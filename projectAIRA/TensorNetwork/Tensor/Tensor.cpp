@@ -92,14 +92,7 @@ namespace aoba::nn::tensor
 		pTensorCore->synchronize_from_CPU_to_GPU();
 	}
 
-	DataType Tensor::getLoss(const Tensor& tensor)
-	{
-		if (tensor.pTensorCore->mDataSize != 1)
-		{
-			assert(0);
-		}
-		return tensor.pTensorCore->_m_cpu_data_address[0];
-	}
+
 
 	DataType Tensor::operator()(u32 batchSize, u32 channel, u32 height, u32 width) const
 	{

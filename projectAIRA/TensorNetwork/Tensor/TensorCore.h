@@ -77,8 +77,8 @@ public:
 	//逆伝搬関数を呼ぶ
 	void callBackward() const;
 
-
-
+	//ofstreamに渡す際に非constポインタが必要になる為、const修飾子を付けていない。
+	void save( std::ofstream&);
 
 	DataType  operator()(u32, u32, u32, u32) const;
 	DataType& operator()(u32, u32, u32, u32);
@@ -100,61 +100,22 @@ public:
 	DataType  d(u32) const;
 	DataType& d(u32);
 
-	Dimension getDimension() const
-	{
-		return mDimension;
-	}
+	Dimension getDimension() const;
+	u32 getBatchSize() const;
+	u32 getChannel() const;
+	u32 getHeight() const;
+	u32 getWidth() const;
+	u32 getHW() const;
+	u32 getCHW() const;
+	u32 getDataSize() const;
 
-	u32 getBatchSize() const
-	{
-		return mBatchSize;
-	}
+	bool isOnCuda() const;
+	bool requiresGrad() const;
 
-	u32 getChannel() const { return mChannel; }
-	u32 getHeight() const { return mHeight; }
-	u32 getWidth() const { return mWidth; }
-
-	u32 getHW() const { return mHeight * mWidth; }
-
-	u32 getCHW() const
-	{
-		return mCHW;
-	}
-
-	u32 getDataSize() const
-	{
-		return mDataSize;
-	}
-
-	bool isOnCuda() const
-	{
-		return m_on_cuda;
-	}
-
-	bool requiresGrad() const
-	{
-		return m_grad_required;
-	}
-
-	DataType* getGpuDataAddress()
-	{
-		return _m_gpu_data_address;
-	}
-
-	const DataType* getGpuDataAddress() const
-	{
-		return _m_gpu_data_address;
-	}
-
-	DataType* getGpuGradDataAddress()
-	{
-		return _m_gpu_grad_data_address;
-	}
-
-	const DataType* getGpuGradDataAddress() const
-	{
-		return _m_gpu_grad_data_address;
-	}
+	DataType* getGpuDataAddress();
+	const DataType* getGpuDataAddress() const;
+	DataType* getGpuGradDataAddress();
+	const DataType* getGpuGradDataAddress() const;
 
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
@@ -222,10 +183,6 @@ private:
 
 	void memcpyFromCPUToGPU(DataType* cpu_address, DataType* gpu_address, u32 data_size);
 
-
-
-	//const DataType* get_cpu_data_address() const;
-	//DataType* get_cpu_data_address();
 
 public:
 	static void memcpyFromVector(Tensor&, const std::vector<DataType>&);

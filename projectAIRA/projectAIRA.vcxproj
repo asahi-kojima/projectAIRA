@@ -112,6 +112,13 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CudaCompile />
+    <CudaCompile>
+      <AdditionalOptions>-std=c++17 %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
+    <CudaLink>
+      <AdditionalOptions>-std=c++17 %(AdditionalOptions)</AdditionalOptions>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -130,6 +137,13 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CudaCompile />
+    <CudaCompile>
+      <AdditionalOptions>-std=c++17 %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
+    <CudaLink>
+      <AdditionalOptions>-std=c++17 %(AdditionalOptions)</AdditionalOptions>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="projectAIRA.cpp" />
@@ -151,7 +165,6 @@
     <ClInclude Include="TensorNetwork\Layer\CrossEntropyWithSM.h" />
     <ClInclude Include="TensorNetwork\Layer\L2Loss.h" />
     <ClInclude Include="TensorNetwork\Layer\BaseLayer.h" />
-    <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h" />
     <ClInclude Include="TensorNetwork\Layer\Layer.h" />
     <ClInclude Include="TensorNetwork\Layer\MaxPooling.h" />
     <ClInclude Include="TensorNetwork\Layer\ReLU.h" />

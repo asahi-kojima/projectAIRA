@@ -11,7 +11,6 @@ class aoba::nn::tensor::Tensor
 {
 public:
 	friend class layer::BaseLayer;
-	friend class TensorCore;
 
 	Tensor();
 	Tensor(const Tensor& tensor);
@@ -33,7 +32,6 @@ public:
 	void synchronize_from_GPU_to_CPU();
 	void synchronize_from_CPU_to_GPU();
 	
-	static DataType getLoss(const Tensor&);
 
 	DataType operator()(u32, u32, u32, u32) const;
 	DataType& operator()(u32, u32, u32, u32);

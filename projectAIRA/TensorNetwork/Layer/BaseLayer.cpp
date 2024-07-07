@@ -1,3 +1,5 @@
+#include <ostream>
+#include <fstream>
 #include "BaseLayer.h"
 #include "Tensor/Tensor.h"
 #include "Layer.h"
@@ -210,24 +212,51 @@ namespace aoba::nn::layer
 	}
 
 
-	void BaseLayer::save(const std::string& savePath) const
+	void BaseLayer::save(const std::filesystem::path& saveDirPath) const
 	{
-		for (const auto& param : mTrainableParameterTbl)
+		for (u32 i = 0; i < mTrainableParameterTbl.size(); i++)
 		{
+			std::filesystem::path parameterSavePath = saveDirPath;
+			parameterSavePath += std::filesystem::path(std::string("_") + std::to_string(i));
 
+			//親ディレクトリを作成
+			auto parentPath = saveDirPath.parent_path();
+			if (!std::filesystem::exists(parentPath))
+			{
+				bool success = std::filesystem::create_directories(parentPath);
+				if (!success)
+				{
+					std::cout << "Directory creation failed : " << parentPath << std::endl;
+				}
+			}
+
+			//保存処理
+#ifdef _DEBUG
+			std::cout << parameterSavePath << std::endl;
+#endif
+			std::ofstream ofs(parameterSavePath.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+			if (!ofs)
+			{
+				std::cout << "Error, cannot open : " << parameterSavePath << std::endl;
+			}
+
+			auto& parameter = *mTrainableParameterTbl[i];
+			//ofs.write(parameter.getBatchSize(), sizeof(u32));
+			parameter.save(ofs);
+			ofs.close();
 		}
 
 		//内部層に保存命令を再帰的に出す
 		for (auto iter = m_internal_layer_tbl.begin(), end = m_internal_layer_tbl.end(); iter != end; iter++)
 		{
-			const std::string& mLayerName = iter->first;
+			const std::string& layerName = iter->first;
 			Layer layer = iter->second;
-
-			//layer.save();
+			std::filesystem::path newSavePath = saveDirPath / (layerName + "(" + layer.getLayerName()+")");
+			layer.getBaseLayer()->save(newSavePath);
 		}
 	}
 
-	void BaseLayer::load(const std::string& loadPath)
+	void BaseLayer::load(const std::filesystem::path& loadDirPath)
 	{
 
 	}
@@ -247,13 +276,15 @@ namespace aoba::nn::layer
 		return mBaseLayer->callForward(input);
 	}
 
-	void Layer::save(const std::string& savePath) const
+	void Layer::save(const std::string& saveDirPath) const
 	{
-		mBaseLayer->save(savePath);
+		auto saveDirPath_as_fs = std::filesystem::path(saveDirPath);
+		saveDirPath_as_fs /= mLayerName;
+		mBaseLayer->save(saveDirPath_as_fs.c_str());
 	}
 
-	void Layer::load(const std::string& loadPath)
+	void Layer::load(const std::string& loadDirPath)
 	{
-		mBaseLayer->load(loadPath);
+		mBaseLayer->load(loadDirPath);
 	}
 }

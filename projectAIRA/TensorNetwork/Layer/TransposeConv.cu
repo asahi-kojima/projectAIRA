@@ -197,9 +197,9 @@ namespace
 		DataType result = 0.0f;
 		for (u32 N = 0; N < mBatchSize; N++)
 		{
-			for (u32 hw = 0; hw < mOhOw; hw++)
+			for (u32 OhOw = 0; OhOw < mOhOw; OhOw++)
 			{
-				result += output_grad[N * mOcOhOw + Oc * mOhOw + hw] * reshapedInput[N * mOhOwIcFhFw + hw * mIcFhFw + IcFhFw];
+				result += output_grad[N * mOcOhOw + Oc * mOhOw + OhOw] * reshapedInput[N * mOhOwIcFhFw + OhOw * mIcFhFw + IcFhFw];
 			}
 		}
 		weight_grad[Oc * mIcFhFw + IcFhFw] = result;

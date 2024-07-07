@@ -40,24 +40,6 @@ namespace aoba
 					return mBaseLayer->callForward(input_tensor_as_vector);
 				}
 
-				/*template <typename ... Args>
-				BaseLayer::iotype operator()(Args ... args) const
-				{
-					BaseLayer::iotype io_tbl[] = { args... };
-					const u32 input_io_num = (sizeof(io_tbl) / sizeof(io_tbl[0]));
-
-					BaseLayer::iotype input_tensor_as_vector(0);
-					for (u32 i = 0; i < input_io_num; i++)
-					{
-						BaseLayer::iotype io = io_tbl[i];
-						for (u32 j = 0; j < io.size(); j++)
-						{
-							input_tensor_as_vector.push_back(io[j]);
-						}
-					}
-
-					return mBaseLayer->callForward(input_tensor_as_vector);
-				}*/
 
 				u32 get_input_tensor_num() const
 				{
@@ -78,8 +60,13 @@ namespace aoba
 					return mBaseLayer;
 				}
 
-				void save(const std::string& savePath) const;
-				void load(const std::string& loadPath);
+				void save(const std::string& saveDirPath) const;
+				void load(const std::string& loadDirPath);
+
+				std::string getLayerName() const
+				{
+					return mLayerName;
+				}
 
 			private:
 				std::shared_ptr<BaseLayer> mBaseLayer;
@@ -91,6 +78,9 @@ namespace aoba
 			{
 				Layer layer{};
 				layer.mBaseLayer = std::make_shared<T>(args...);
+				std::string layerNameFromTemplate = std::string(typeid(T).name());
+				auto pos = layerNameFromTemplate.find(" ");
+				layer.mLayerName = std::string(layerNameFromTemplate.begin() + pos + 1, layerNameFromTemplate.end());
 				return layer;
 			}
 

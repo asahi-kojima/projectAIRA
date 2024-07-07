@@ -625,11 +625,57 @@ public:
 };
 
 
-//Layer gen<MyLayer>();
+class TestModule : public nnModule
+{
+public:
+	TestModule()
+	{
+		mlayer["seq"] = Sequential(
+			Convolution(ndf, 4, 2, 1),//28->14
+			BatchNorm(),
+			ReLU(),
+			Convolution(ndf * 2, 4, 2, 1),//14->7
+			BatchNorm(),
+			ReLU(),
+			Convolution(ndf * 4, 4, 2, 1),//7->3
+			BatchNorm(),
+			ReLU(),
+			Convolution(ndf * 8, 5, 1, 1)//1->1
+		);
+		mlayer["affine"] = Affine(100);
+		mlayer["seq1"] = Sequential(
+			Convolution(ndf, 4, 2, 1),//28->14
+			BatchNorm(),
+			Sequential(
+				Convolution(ndf, 4, 2, 1),//28->14
+				BatchNorm(), Sequential(
+					Convolution(ndf, 4, 2, 1),//28->14
+					BatchNorm(),
+					ReLU(),
+					Convolution(ndf * 2, 4, 2, 1),//14->7
+					BatchNorm(),
+					ReLU(),
+					Convolution(ndf * 4, 4, 2, 1),//7->3
+					BatchNorm(),
+					ReLU(),
+					Convolution(ndf * 8, 5, 1, 1)//1->1
+				)
+			)
+		);
+	}
+
+	iotype forward(const iotype& input) override
+	{
+		return mlayer["seq"](input);
+	}
+};
 
 
 int main()
 {
+	/*auto t = gen<TestModule>();
+	t.save(".");
+	return 1;*/
 	//check_Affine();
 	//check_ReLU();
 	//check_Conv();
@@ -960,8 +1006,9 @@ int main()
 		auto d = gen<DNet>();
 		auto g = gen<GNet>();
 		auto split = Split();
-
-
+		/*d.save(".\\");
+		g.save(".\\");
+		split.save(".\\");*/
 		//auto seq = Sequential(Affine(10));
 		//auto affine0 = Affine(100);
 		//auto relu = ReLU();
@@ -994,7 +1041,9 @@ int main()
 				loss[0].backward();
 				optim.optimize();
 				average_loss = (average_loss * Bn + loss[0](0)) / (Bn + 1);
+				//d.save(".");
 				progressBar(Bn, batched_data_num, average_loss);
+				aoba::nn::layer::debugTimers.size();
 			}
 			std::cout << std::endl;
 		}

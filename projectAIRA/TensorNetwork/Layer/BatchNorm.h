@@ -19,11 +19,6 @@ namespace aoba
 				virtual void backward() override;
 
 
-				/*const DataType mAffineWeight = 0.1f;
-				const u32 m_output_size;
-				u32 m_batch_size;
-				u32 m_input_size;*/
-
 				TensorCore& mOutput;
 				TensorCore& mGamma;
 				TensorCore& mBeta;

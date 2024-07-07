@@ -80,9 +80,6 @@
     <ClInclude Include="TensorNetwork\root_TensorNetwork.h">
       <Filter>ヘッダー ファイル\TensorNetwork</Filter>
     </ClInclude>
-    <ClInclude Include="TensorNetwork\Layer\layer_definition_template.h">
-      <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
-    </ClInclude>
     <ClInclude Include="TensorNetwork\Layer\Add.h">
       <Filter>ヘッダー ファイル\TensorNetwork\Layer</Filter>
     </ClInclude>

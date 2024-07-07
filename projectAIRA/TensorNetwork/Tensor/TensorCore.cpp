@@ -1,3 +1,4 @@
+#include <fstream>
 #include "TensorCore.h"
 #include "Tensor.h"
 #include "Layer/BaseLayer.h"
@@ -381,7 +382,7 @@ bool TensorCore::reshapeAs(u32 batchSize, u32 height, u32 width, bool on_cuda)
 		//データサイズが違う場合は再確保する
 		else
 		{
-			*this = TensorCore(batchSize, height , width, m_grad_required);
+			*this = TensorCore(batchSize, height, width, m_grad_required);
 			isInitialized = true;
 		}
 	}
@@ -417,7 +418,7 @@ bool TensorCore::reshapeExactlyAs(u32 batchSize, u32 height, u32 width, bool on_
 		//データサイズが違う場合は再確保する
 		else
 		{
-			*this = TensorCore(batchSize, height , width, m_grad_required);
+			*this = TensorCore(batchSize, height, width, m_grad_required);
 			isInitialized = true;
 		}
 	}
@@ -436,7 +437,7 @@ bool TensorCore::reshapeAs(u32 batchSize, u32 channel, u32 height, u32 width, bo
 	//未初期化の場合
 	if (mDimension == Dimension::dim0)
 	{
-		*this = TensorCore(batchSize, channel,  height,  width, m_grad_required);
+		*this = TensorCore(batchSize, channel, height, width, m_grad_required);
 		isInitialized = true;
 	}
 	else
@@ -464,6 +465,34 @@ bool TensorCore::reshapeAs(u32 batchSize, u32 channel, u32 height, u32 width, bo
 
 	return isInitialized;
 }
+
+
+void TensorCore::save(std::ofstream& ofs)
+{
+	ofs.write(reinterpret_cast<char*>(&mDimension), sizeof(Dimension));
+	ofs.write(reinterpret_cast<char*>(&mBatchSize), sizeof(u32));
+	ofs.write(reinterpret_cast<char*>(&mChannel), sizeof(u32));
+	ofs.write(reinterpret_cast<char*>(&mHeight), sizeof(u32));
+	ofs.write(reinterpret_cast<char*>(&mWidth), sizeof(u32));
+	ofs.write(reinterpret_cast<char*>(&m_grad_required), sizeof(bool));
+
+	if (m_on_cuda)
+	{
+		synchronize_from_GPU_to_CPU();
+	}
+	for (u32 i = 0; i < mDataSize; i++)
+	{
+		ofs.write(reinterpret_cast<char*>(_m_cpu_data_address + i), sizeof(DataType));
+	}
+	if (m_grad_required)
+	{
+		for (u32 i = 0; i < mDataSize; i++)
+		{
+			ofs.write(reinterpret_cast<char*>(_m_cpu_grad_data_address + i), sizeof(DataType));
+		}
+	}
+}
+
 
 bool TensorCore::isSameShape(const TensorCore& comparison)
 {
@@ -1062,6 +1091,62 @@ DataType& TensorCore::d(u32 index)
 		}
 		return address[index];
 	}
+}
+
+TensorCore::Dimension TensorCore::getDimension() const
+{
+	return mDimension;
+}
+
+u32 TensorCore::getBatchSize() const
+{
+	return mBatchSize;
+}
+
+u32 TensorCore::getChannel() const { return mChannel; }
+u32 TensorCore::getHeight() const { return mHeight; }
+u32 TensorCore::getWidth() const { return mWidth; }
+
+u32 TensorCore::getHW() const { return mHeight * mWidth; }
+
+u32 TensorCore::getCHW() const
+{
+	return mCHW;
+}
+
+u32 TensorCore::getDataSize() const
+{
+	return mDataSize;
+}
+
+bool TensorCore::isOnCuda() const
+{
+	return m_on_cuda;
+}
+
+bool TensorCore::requiresGrad() const
+{
+	return m_grad_required;
+}
+
+DataType* TensorCore::getGpuDataAddress()
+{
+	return _m_gpu_data_address;
+}
+
+const DataType* TensorCore::getGpuDataAddress() const
+{
+	return _m_gpu_data_address;
+}
+
+DataType* TensorCore::getGpuGradDataAddress()
+{
+	return _m_gpu_grad_data_address;
+}
+
+const DataType* TensorCore::getGpuGradDataAddress() const
+{
+	return _m_gpu_grad_data_address;
 }
 
 

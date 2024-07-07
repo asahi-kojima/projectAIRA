@@ -28,7 +28,7 @@ namespace aoba
 								<< layer_tbl[i].get_output_tensor_num() << " ). " << std::endl;
 							exit(1);
 						}
-
+						//const std::string layerId = layer_tbl[i].getLayerName() + "#" + std::to_string(i);
 						mlayer[std::to_string(i)] = layer_tbl[i];
 					}
 				}
