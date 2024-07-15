@@ -232,7 +232,7 @@ namespace aoba::nn::layer
 
 			//保存処理
 #ifdef _DEBUG
-			std::cout << parameterSavePath << std::endl;
+			std::cout << "Save Processing : " << parameterSavePath << std::endl;
 #endif
 			std::ofstream ofs(parameterSavePath.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 			if (!ofs)
@@ -258,7 +258,43 @@ namespace aoba::nn::layer
 
 	void BaseLayer::load(const std::filesystem::path& loadDirPath)
 	{
+		for (u32 i = 0; i < mTrainableParameterTbl.size(); i++)
+		{
+			std::filesystem::path parameterSavePath = loadDirPath;
+			parameterSavePath += std::filesystem::path(std::string("_") + std::to_string(i));
 
+			//ファイルの存在確認
+			if (!std::filesystem::is_regular_file(parameterSavePath))
+			{
+				std::cout << parameterSavePath << " can't load." << std::endl;
+				exit(1);
+			}
+			
+
+			//読み出し処理
+#ifdef _DEBUG
+			std::cout << "Load Processing : " << parameterSavePath << std::endl;
+#endif
+			std::ifstream ifs(parameterSavePath.c_str(), std::ios_base::in | std::ios_base::binary);
+			if (!ifs)
+			{
+				std::cout << "Error, cannot open : " << parameterSavePath << std::endl;
+			}
+
+			auto& parameter = *mTrainableParameterTbl[i];
+			//ofs.write(parameter.getBatchSize(), sizeof(u32));
+			parameter.load(ifs);
+			ifs.close();
+		}
+
+		//内部層に保存命令を再帰的に出す
+		for (auto iter = m_internal_layer_tbl.begin(), end = m_internal_layer_tbl.end(); iter != end; iter++)
+		{
+			const std::string& layerName = iter->first;
+			Layer layer = iter->second;
+			std::filesystem::path newLoadPath = loadDirPath / (layerName + "(" + layer.getLayerName() + ")");
+			layer.getBaseLayer()->load(newLoadPath);
+		}
 	}
 
 	Layer::Layer(const Layer& layer)
@@ -285,6 +321,8 @@ namespace aoba::nn::layer
 
 	void Layer::load(const std::string& loadDirPath)
 	{
-		mBaseLayer->load(loadDirPath);
+		auto loadDirPath_as_fs = std::filesystem::path(loadDirPath);
+		loadDirPath_as_fs /= mLayerName;
+		mBaseLayer->load(loadDirPath_as_fs.c_str());
 	}
 }

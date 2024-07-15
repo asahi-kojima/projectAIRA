@@ -19,8 +19,9 @@
 ////正確な値が出ないので注意。
 ////GPU使用時にGPUSyncが切れているとTimeデバッグは
 ////正確な値が出ないので注意。
+#if _DEBUG
 #define TIME_DEBUG (ON & _DEBUG)
-
+#endif
 #if TIME_DEBUG
 #include <map>
 #include <string>

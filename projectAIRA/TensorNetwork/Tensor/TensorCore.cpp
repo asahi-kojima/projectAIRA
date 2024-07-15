@@ -493,6 +493,43 @@ void TensorCore::save(std::ofstream& ofs)
 	}
 }
 
+void TensorCore::load(std::ifstream& ifs)
+{
+	ifs.read(reinterpret_cast<char*>(&mDimension), sizeof(Dimension));
+	ifs.read(reinterpret_cast<char*>(&mBatchSize), sizeof(u32));
+	ifs.read(reinterpret_cast<char*>(&mChannel), sizeof(u32));
+	ifs.read(reinterpret_cast<char*>(&mHeight), sizeof(u32));
+	ifs.read(reinterpret_cast<char*>(&mWidth), sizeof(u32));
+	ifs.read(reinterpret_cast<char*>(&m_grad_required), sizeof(bool));
+	mHW = mHeight * mWidth;
+	mCHW = mChannel * mHW;
+	mDataSize = mBatchSize * mCHW;
+
+
+	mallocOnCPU(_m_cpu_data_address, mDataSize);
+	if (m_grad_required)
+	{
+		mallocOnCPU(_m_cpu_grad_data_address, mDataSize);
+	}
+
+	for (u32 i = 0; i < mDataSize; i++)
+	{
+		ifs.read(reinterpret_cast<char*>(_m_cpu_data_address + i), sizeof(DataType));
+	}
+	if (m_grad_required)
+	{
+		for (u32 i = 0; i < mDataSize; i++)
+		{
+			ifs.read(reinterpret_cast<char*>(_m_cpu_grad_data_address + i), sizeof(DataType));
+		}
+	}
+	if (m_on_cuda)
+	{
+		synchronize_from_CPU_to_GPU();
+	}
+
+}
+
 
 bool TensorCore::isSameShape(const TensorCore& comparison)
 {

@@ -1022,6 +1022,10 @@ int main()
 		std::cout << "Test11" << std::endl;
 		std::cout << "===============================" << std::endl;
 		bool on_cuda = true;
+
+		
+		d.load(".");
+		g.load(".");
 		for (u32 i = 0; i < 1000; i++)
 		{
 			std::cout << "-------------------------------" << std::endl;
@@ -1041,10 +1045,14 @@ int main()
 				loss[0].backward();
 				optim.optimize();
 				average_loss = (average_loss * Bn + loss[0](0)) / (Bn + 1);
-				//d.save(".");
 				progressBar(Bn, batched_data_num, average_loss);
+#ifdef _DEBUG
 				aoba::nn::layer::debugTimers.size();
+#endif
+				//d.load(".");
 			}
+			//d.save(".");
+			//g.save(".");
 			std::cout << std::endl;
 		}
 	}

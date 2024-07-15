@@ -60,7 +60,7 @@ public:
 	TensorCore(u32 batchSize, u32 channel, u32 height, u32 width, bool grad_required = false);
 	virtual ~TensorCore();
 
-	
+
 	bool reshapeAs(const TensorCore&, bool on_cuda = false);
 	bool reshapeExactlyAs(const TensorCore&, bool on_cuda = false);
 	bool reshapeAs(u32 width, bool on_cuda = false);
@@ -78,7 +78,8 @@ public:
 	void callBackward() const;
 
 	//ofstreamに渡す際に非constポインタが必要になる為、const修飾子を付けていない。
-	void save( std::ofstream&);
+	void save(std::ofstream&);
+	void load(std::ifstream&);
 
 	DataType  operator()(u32, u32, u32, u32) const;
 	DataType& operator()(u32, u32, u32, u32);
